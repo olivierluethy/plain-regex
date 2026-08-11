@@ -26,6 +26,7 @@ const SAMPLE = 'https://www.linkedin.com/jobs/view/software-engineer-4012?refId=
 
 export function UrlMode() {
   const loadAst = useStore((s) => s.loadAst)
+  const setSampleValue = useStore((s) => s.setSampleValue)
   const [input, setInput] = useState('')
   const [constraints, setConstraints] = useState<Record<string, Constraint>>({})
 
@@ -42,6 +43,8 @@ export function UrlMode() {
   const build = () => {
     const ast = buildAstFromUrl(parts, Object.fromEntries(parts.map((p) => [p.id, getC(p)])))
     loadAst(ast, 'Built from a URL')
+    // Seed "Build from example" with the URL so it's ready to refine by selection.
+    if (input.trim()) setSampleValue(input.trim())
   }
 
   const host = parts.filter((p) => ['subdomain', 'domain', 'tld'].includes(p.group))

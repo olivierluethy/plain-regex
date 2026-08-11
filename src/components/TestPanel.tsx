@@ -27,8 +27,8 @@ export function TestPanel() {
 
   return (
     <Panel
-      eyebrow="Try it"
-      title="Test with your own text"
+      eyebrow="Test corpus"
+      title="Paste many lines to test"
       actions={
         <Segmented
           size="sm"
