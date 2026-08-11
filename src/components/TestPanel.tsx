@@ -13,6 +13,7 @@ import { Panel, Segmented } from '@/ui/primitives'
 import { Check, Copy, X } from '@/ui/icons'
 import { useCopy } from '@/ui/useCopy'
 import { HighlightedValue } from './HighlightedValue'
+import { MatchBreakdown } from './MatchBreakdown'
 
 const FLAG_INFO: { key: keyof RegexFlags; label: string; title: string }[] = [
   { key: 'i', label: 'i', title: 'Ignore capitalisation' },
@@ -134,7 +135,7 @@ function PerLineResults({
         <span className="font-medium text-fail">{rows.length - passCount} no match</span>
         <span className="ml-auto text-ink-faint">Click “Why?” for the reason</span>
       </div>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex max-h-[48vh] flex-col gap-1.5 overflow-y-auto scroll-thin">
         {rows.map((r, i) => (
           <LineRow key={i} r={r} ast={ast} flags={flags} />
         ))}
@@ -177,11 +178,10 @@ function LineRow({ r, ast, flags }: { r: LineResult; ast: RuleNode; flags: Regex
         </button>
       </div>
       {open && (
-        <p
-          className={`mt-1.5 pl-8 text-body-sm ${r.matched ? 'text-pass' : 'text-fail'}`}
-        >
-          {result.reason}
-        </p>
+        <div className="mt-1.5 pl-8">
+          <p className={`text-body-sm ${r.matched ? 'text-pass' : 'text-fail'}`}>{result.reason}</p>
+          {r.matched && <MatchBreakdown steps={result.breakdown} />}
+        </div>
       )}
     </li>
   )
@@ -237,7 +237,7 @@ function WholeTextResults({
         <span className="font-medium text-pass">{spans.length}</span>{' '}
         {spans.length === 1 ? 'match' : 'matches'} found
       </div>
-      <div className="overflow-x-auto scroll-thin rounded-md border border-border bg-surface-2 px-3 py-2.5">
+      <div className="max-h-[48vh] overflow-auto scroll-thin rounded-md border border-border bg-surface-2 px-3 py-2.5">
         <pre className="whitespace-pre-wrap break-words font-mono text-mono-sm text-ink">
           {segments.map((seg, i) =>
             seg.match ? (
