@@ -1,14 +1,16 @@
 import { useStore } from '@/store/useStore'
-import type { RuleNode } from '@/core'
+import { findNode, type RuleNode } from '@/core'
 import { Panel } from '@/ui/primitives'
 import { Redo, Undo } from '@/ui/icons'
 import { AddBlockMenu } from './blocks/AddBlockMenu'
 import { NodeChip } from './blocks/NodeChip'
+import { DndReorder, OverlayChip, SortableRow } from './blocks/Sortable'
 
 export function RuleBuilder() {
   const rule = useStore((s) => s.active())
   const advanced = useStore((s) => s.experience === 'advanced')
   const addChild = useStore((s) => s.addChild)
+  const moveNode = useStore((s) => s.moveNode)
   const undo = useStore((s) => s.undo)
   const redo = useStore((s) => s.redo)
 
@@ -50,28 +52,43 @@ export function RuleBuilder() {
         {children.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-body text-ink-muted">
-              No blocks yet. Add one to describe what you want to match.
+              No blocks yet. Add one, or select text over in “Build from example”.
             </p>
             <AddBlockMenu onAdd={onAdd} advanced={advanced} />
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5">
-            {children.map((child, i) => (
-              <NodeChip
-                key={child.id}
-                node={child}
-                parentId={root.id}
-                index={i}
-                siblingCount={children.length}
-                advanced={advanced}
-              />
-            ))}
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2.5">
+            <DndReorder
+              ids={children.map((c) => c.id!)}
+              onReorder={(from, to) => moveNode(root.id!, from, to)}
+              renderOverlay={(id) => {
+                const n = findNode(root, id)
+                return n ? <OverlayChip node={n} /> : null
+              }}
+            >
+              {children.map((child, i) => (
+                <SortableRow key={child.id} id={child.id!}>
+                  {({ handle }) => (
+                    <span className="inline-flex items-center gap-0.5">
+                      {handle}
+                      <NodeChip
+                        node={child}
+                        parentId={root.id}
+                        index={i}
+                        siblingCount={children.length}
+                        advanced={advanced}
+                      />
+                    </span>
+                  )}
+                </SortableRow>
+              ))}
+            </DndReorder>
             <AddBlockMenu onAdd={onAdd} advanced={advanced} compact />
           </div>
         )}
       </div>
       <p className="mt-3 text-body-sm text-ink-muted">
-        Click a block to change it. Use its ••• menu to repeat, duplicate, reorder or remove it.
+        Drag the handle to reorder a block. Click a block to change it, or use its ••• menu.
       </p>
     </Panel>
   )

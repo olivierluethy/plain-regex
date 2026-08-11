@@ -1,9 +1,10 @@
-import { nodes, type RepeatPreset, type RuleNode } from '@/core'
+import { findNode, nodes, type RepeatPreset, type RuleNode } from '@/core'
 import { useStore } from '@/store/useStore'
 import { MenuItem, Popover } from '@/ui/primitives'
 import { Dots, Plus, X } from '@/ui/icons'
 import { chipLabel, repeatBadge, REPEAT_OPTIONS } from './labels'
 import { NodeEditor } from './NodeEditors'
+import { DndReorder, OverlayChip, SortableRow } from './Sortable'
 
 interface SlotProps {
   node: RuleNode
@@ -122,6 +123,15 @@ function NodeContent({ inner, advanced }: { inner: RuleNode; advanced: boolean }
       )
     case 'strip':
       return <WrapContainer node={inner} label="remove" tone="fail" advanced={advanced} />
+    case 'forbid':
+      return (
+        <WrapContainer
+          node={inner}
+          label={inner.scope === 'anywhere' ? 'never allow' : 'not allowed'}
+          tone="fail"
+          advanced={advanced}
+        />
+      )
     default:
       return <LeafChip inner={inner} />
   }
@@ -181,10 +191,10 @@ function WrapContainer({
   tone: 'brand' | 'pass' | 'fail'
   advanced: boolean
 }) {
-  const canEditName = node.type === 'capture'
+  const canEditLabel = node.type === 'capture' || node.type === 'forbid'
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-md border border-dashed px-1.5 py-1 ${TONE[tone]}`}>
-      {canEditName ? (
+      {canEditLabel ? (
         <Popover
           width={240}
           trigger={({ toggle }) => (
@@ -206,6 +216,7 @@ function WrapContainer({
 /** Container for a group of child blocks. */
 function GroupContainer({ node, advanced }: { node: Extract<RuleNode, { type: 'group' }>; advanced: boolean }) {
   const addChild = useStore((s) => s.addChild)
+  const moveNode = useStore((s) => s.moveNode)
   const label = node.capture ? (node.name ? `keep: ${node.name}` : 'keep this') : 'group'
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border-strong bg-surface-2/50 px-1.5 py-1">
@@ -219,17 +230,32 @@ function GroupContainer({ node, advanced }: { node: Extract<RuleNode, { type: 'g
       >
         <NodeEditor node={node} />
       </Popover>
-      <span className="inline-flex flex-wrap items-center gap-1.5">
-        {node.children.map((c, i) => (
-          <NodeChip
-            key={c.id}
-            node={c}
-            parentId={node.id}
-            index={i}
-            siblingCount={node.children.length}
-            advanced={advanced}
-          />
-        ))}
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <DndReorder
+          ids={node.children.map((c) => c.id!)}
+          onReorder={(from, to) => moveNode(node.id!, from, to)}
+          renderOverlay={(id) => {
+            const n = findNode(node, id)
+            return n ? <OverlayChip node={n} /> : null
+          }}
+        >
+          {node.children.map((c, i) => (
+            <SortableRow key={c.id} id={c.id!}>
+              {({ handle }) => (
+                <span className="inline-flex items-center gap-0.5">
+                  {handle}
+                  <NodeChip
+                    node={c}
+                    parentId={node.id}
+                    index={i}
+                    siblingCount={node.children.length}
+                    advanced={advanced}
+                  />
+                </span>
+              )}
+            </SortableRow>
+          ))}
+        </DndReorder>
       </span>
       <button
         onClick={() => addChild(node.id!, nodes.literal(''))}
@@ -245,21 +271,36 @@ function GroupContainer({ node, advanced }: { node: Extract<RuleNode, { type: 'g
 /** Container for a choice: option or option or … */
 function ChoiceContainer({ node, advanced }: { node: Extract<RuleNode, { type: 'choice' }>; advanced: boolean }) {
   const addChild = useStore((s) => s.addChild)
+  const moveNode = useStore((s) => s.moveNode)
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5 rounded-md border border-dashed border-brand/30 bg-brand-tint/30 px-1.5 py-1">
       <span className="eyebrow px-0.5 text-[0.6875rem]">one of</span>
-      {node.options.map((opt, i) => (
-        <span key={opt.id} className="inline-flex items-center gap-1.5">
-          {i > 0 && <span className="text-xs font-semibold text-brand/70">or</span>}
-          <NodeChip
-            node={opt}
-            parentId={node.id}
-            index={i}
-            siblingCount={node.options.length}
-            advanced={advanced}
-          />
-        </span>
-      ))}
+      <DndReorder
+        ids={node.options.map((o) => o.id!)}
+        onReorder={(from, to) => moveNode(node.id!, from, to)}
+        renderOverlay={(id) => {
+          const n = findNode(node, id)
+          return n ? <OverlayChip node={n} /> : null
+        }}
+      >
+        {node.options.map((opt, i) => (
+          <SortableRow key={opt.id} id={opt.id!}>
+            {({ handle }) => (
+              <span className="inline-flex items-center gap-0.5">
+                {i > 0 && <span className="mr-0.5 text-xs font-semibold text-brand/70">or</span>}
+                {handle}
+                <NodeChip
+                  node={opt}
+                  parentId={node.id}
+                  index={i}
+                  siblingCount={node.options.length}
+                  advanced={advanced}
+                />
+              </span>
+            )}
+          </SortableRow>
+        ))}
+      </DndReorder>
       <button
         onClick={() => addChild(node.id!, nodes.literal(''))}
         aria-label="Add option"
