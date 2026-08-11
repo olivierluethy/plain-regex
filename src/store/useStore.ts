@@ -11,6 +11,7 @@ import {
   newId,
   nodes,
   normalizeAst,
+  parseRegexInput,
   removeNode,
   repeatBounds,
   replaceNode,
@@ -125,6 +126,7 @@ interface StoreState {
   duplicateNodeById: (id: string) => void
   setRepeatPreset: (id: string, preset: RepeatPreset, n?: number, m?: number) => void
   loadAst: (ast: unknown, label: string) => { ok: boolean; error?: string }
+  importRegex: (input: string, mode: 'replace' | 'append') => { ok: boolean; error?: string }
 
   // multi-select & bulk deletion
   setSelection: (ids: string[]) => void
@@ -349,6 +351,45 @@ export const useStore = create<StoreState>()(
           } catch (e) {
             return { ok: false, error: e instanceof Error ? e.message : 'Invalid rule.' }
           }
+        },
+
+        importRegex: (input, mode) => {
+          const res = parseRegexInput(input)
+          if (!res.ok || !res.ast) return { ok: false, error: res.error }
+          set((s) => {
+            const rule = s.rules.find((r) => r.id === s.activeRuleId)
+            if (!rule) return s
+            if (mode === 'replace') {
+              const next = commit(rule, res.ast!, res.flags ?? rule.flags, {
+                force: true,
+                label: 'Imported a regex',
+              })
+              // A wholesale new AST invalidates the old sample marks.
+              return { rules: replaceActive(s.rules, rule.id, () => ({ ...next, marks: [] })) }
+            }
+            // Append: splice the imported blocks onto the end of the current rule.
+            let ast = rule.ast
+            for (const child of res.ast!.children) {
+              ast = insertChild(ast, rule.ast.id!, child) as SequenceNode
+            }
+            // Union the imported flags in — appending should never silently drop them.
+            const f = res.flags
+            const flags = f
+              ? {
+                  ...rule.flags,
+                  i: rule.flags.i || f.i,
+                  m: rule.flags.m || f.m,
+                  s: rule.flags.s || f.s,
+                  u: rule.flags.u || f.u,
+                }
+              : rule.flags
+            const next = commit(rule, ast, flags, {
+              force: true,
+              label: 'Imported a regex (added to the rule)',
+            })
+            return { rules: replaceActive(s.rules, rule.id, () => next) }
+          })
+          return { ok: true }
         },
 
         setSelection: (ids) => set({ selectedNodeIds: ids }),
