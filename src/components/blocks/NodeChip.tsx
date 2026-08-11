@@ -138,9 +138,35 @@ function NodeContent({ inner, advanced }: { inner: RuleNode; advanced: boolean }
           advanced={advanced}
         />
       )
+    case 'raw':
+      return <RawChip node={inner} />
     default:
       return <LeafChip inner={inner} />
   }
+}
+
+/** Verbatim regex fragment from import — visibly distinct from meaning-chips. */
+function RawChip({ node }: { node: Extract<RuleNode, { type: 'raw' }> }) {
+  return (
+    <Popover
+      width={280}
+      trigger={({ open, toggle }) => (
+        <button
+          onClick={toggle}
+          aria-expanded={open}
+          title={node.note ?? `raw pattern: ${node.source}`}
+          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border-strong bg-surface-2 px-2 py-1 font-mono text-mono-sm text-ink transition-colors hover:border-brand/50"
+        >
+          <span aria-hidden className="text-ink-faint">
+            {'.*'}
+          </span>
+          <span className="max-w-[200px] truncate">{node.source || 'pattern…'}</span>
+        </button>
+      )}
+    >
+      <NodeEditor node={node} />
+    </Popover>
+  )
 }
 
 function LeafChip({ inner }: { inner: RuleNode }) {

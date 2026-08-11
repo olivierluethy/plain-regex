@@ -211,6 +211,26 @@ export function NodeEditor({ node }: { node: RuleNode }) {
         </p>
       )
 
+    case 'raw':
+      return (
+        <div>
+          <FieldLabel>Raw pattern</FieldLabel>
+          <input
+            autoFocus
+            className="input font-mono text-mono-sm"
+            value={node.source}
+            placeholder="e.g. (?<=x)"
+            onChange={(e) => update(node.id!, { source: e.target.value })}
+            spellCheck={false}
+          />
+          <p className="mt-2 text-body-sm text-ink-muted">
+            {node.note
+              ? node.note
+              : 'A verbatim regex fragment from an import. It’s used exactly as written.'}
+          </p>
+        </div>
+      )
+
     case 'forbid':
       return (
         <div>
