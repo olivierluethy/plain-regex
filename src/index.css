@@ -1,0 +1,150 @@
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 247 248 251;
+    --surface: 255 255 255;
+    --surface-2: 242 244 249;
+    --ink: 26 29 41;
+    --ink-muted: 91 97 114;
+    --ink-faint: 140 146 162;
+    --border: 226 230 239;
+    --border-strong: 205 211 224;
+    --brand: 91 84 232;
+    --brand-strong: 67 60 200;
+    --brand-tint: 237 236 253;
+    --pass: 22 163 74;
+    --pass-tint: 223 244 230;
+    --fail: 220 38 38;
+    --fail-tint: 250 228 228;
+    --warn: 194 120 3;
+  }
+
+  html.dark {
+    --bg: 14 16 23;
+    --surface: 23 26 36;
+    --surface-2: 31 35 48;
+    --ink: 232 234 242;
+    --ink-muted: 146 152 171;
+    --ink-faint: 99 105 122;
+    --border: 38 43 57;
+    --border-strong: 55 62 82;
+    --brand: 124 116 255;
+    --brand-strong: 151 145 255;
+    --brand-tint: 36 36 66;
+    --pass: 52 211 153;
+    --pass-tint: 18 45 38;
+    --fail: 248 113 113;
+    --fail-tint: 54 27 30;
+    --warn: 234 179 8;
+  }
+
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: rgb(var(--border-strong)) transparent;
+  }
+
+  body {
+    margin: 0;
+    background-color: rgb(var(--bg));
+    color: rgb(var(--ink));
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(var(--brand) / 0.35);
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: rgb(var(--brand) / 0.22);
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply text-label uppercase text-ink-muted;
+  }
+
+  .panel {
+    @apply rounded-lg border border-border bg-surface shadow-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium
+      transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50
+      select-none;
+  }
+  .btn-md { @apply h-[38px] px-3.5; }
+  .btn-sm { @apply h-8 px-3 text-[0.8125rem]; }
+  .btn-lg { @apply h-11 px-5; }
+  .btn-primary {
+    @apply btn bg-brand text-white shadow-sm hover:bg-brand-strong active:translate-y-px;
+  }
+  .btn-secondary {
+    @apply btn border border-border-strong bg-surface text-ink hover:bg-surface-2 active:translate-y-px;
+  }
+  .btn-ghost {
+    @apply btn text-ink-muted hover:bg-surface-2 hover:text-ink;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-md text-ink-muted
+      transition-colors duration-150 hover:bg-surface-2 hover:text-ink;
+  }
+
+  .input {
+    @apply w-full rounded-sm border border-border bg-surface px-3 py-2 text-ink
+      placeholder:text-ink-faint transition-shadow duration-150
+      focus:border-brand focus:shadow-focus;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-brand/25 bg-brand-tint
+      px-2.5 py-1 text-sm font-medium text-brand transition-colors duration-150;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Thin scrollbars for inner scroll areas */
+.scroll-thin::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-strong));
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
