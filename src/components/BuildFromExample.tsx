@@ -37,20 +37,26 @@ export function BuildFromExample() {
 
   const value = rule.sampleValue
   const containerRef = useRef<HTMLDivElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
   const [sel, setSel] = useState<SelState | null>(null)
 
-  // Close the popover on scroll / resize / Escape.
+  // Close the popover on scroll / resize / Escape / outside click.
   useEffect(() => {
     if (!sel) return
     const clear = () => setSel(null)
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && clear()
+    const onDown = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) clear()
+    }
     window.addEventListener('scroll', clear, true)
     window.addEventListener('resize', clear)
     window.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
     return () => {
       window.removeEventListener('scroll', clear, true)
       window.removeEventListener('resize', clear)
       window.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
     }
   }, [sel])
 
@@ -175,6 +181,7 @@ export function BuildFromExample() {
 
       {sel && (
         <div
+          ref={popoverRef}
           className="fixed z-40 w-64 animate-fade-in rounded-lg border border-border bg-surface p-1.5 shadow-lg"
           style={{
             left: Math.min(Math.max(sel.rect.left, 140), window.innerWidth - 140),
