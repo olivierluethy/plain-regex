@@ -174,6 +174,59 @@ export function traceMatch(ast: RuleNode, flags: RegexFlags, value: string): Tra
   return parts
 }
 
+// --- part-by-part breakdown of a passing match ------------------------------
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export interface MatchStep {
+  nodeId?: string
+  /** Exact characters this block matched, or null for a zero-width block. */
+  text: string | null
+  /** Plain-English detail of what this block did in the match. */
+  detail: string
+}
+
+/** Detail line for a top-level block that matched no characters (zero-width or empty). */
+function zeroWidthDetail(node: RuleNode): string {
+  switch (node.type) {
+    case 'anchor':
+      return node.kind === 'start'
+        ? 'Matched the very start of the text.'
+        : node.kind === 'end'
+          ? 'Reached the very end of the text.'
+          : 'Matched a word boundary.'
+    case 'contains':
+      return `Found ${describe(node.child)} somewhere, as required.`
+    case 'forbid':
+      return node.scope === 'anywhere'
+        ? `Confirmed ${describe(node.child)} is absent, as required.`
+        : `Confirmed ${describe(node.child)} isn’t here, as required.`
+    default:
+      return `${cap(describe(node))} — matched here without needing any characters.`
+  }
+}
+
+/**
+ * For a value the rule ACCEPTS, report each top-level block in order and the exact
+ * characters it governed — so the user sees which rule matched which part, and why.
+ */
+export function matchBreakdown(ast: RuleNode, flags: RegexFlags, value: string): MatchStep[] {
+  const parts = traceMatch(ast, flags, value)
+  const byId = new Map(parts.map((p) => [p.nodeId, p]))
+  const steps: MatchStep[] = []
+  for (const node of topLevel(ast)) {
+    const part = node.id ? byId.get(node.id) : undefined
+    if (part && part.text.length > 0) {
+      steps.push({ nodeId: node.id, text: part.text, detail: cap(describe(node)) })
+    } else {
+      steps.push({ nodeId: node.id, text: null, detail: zeroWidthDetail(node) })
+    }
+  }
+  return steps
+}
+
 // --- value probing ----------------------------------------------------------
 
 export type CheckStatus = 'empty' | 'allowed' | 'rejected' | 'error'
@@ -192,6 +245,8 @@ export interface CheckResult {
   removed?: { text: string; start: number; end: number }[]
   /** Which block matched which characters (pass). */
   parts?: TracePart[]
+  /** Part-by-part breakdown of a passing match (pass). */
+  breakdown?: MatchStep[]
   /** Where and why it broke (reject). */
   fail?: CheckFailure
 }
@@ -266,15 +321,23 @@ export function quickCheck(ast: RuleNode, flags: RegexFlags, value: string): Che
   const allowed = compiled.regex.test(value)
 
   if (allowed) {
-    const reason = clean && clean.removed.length
-      ? `Allowed — it matches, and “${clean.removed.map((r) => r.text).join('”, “')}” would be stripped out.`
-      : 'Allowed — this value matches every part of the rule.'
+    const breakdown = matchBreakdown(ast, flags, value)
+    let reason: string
+    if (topLevel(ast).length === 0) {
+      reason = 'Allowed — this rule is empty, so it accepts any value.'
+    } else if (clean && clean.removed.length) {
+      reason = `Allowed — it matches, and “${clean.removed.map((r) => r.text).join('”, “')}” would be stripped out.`
+    } else {
+      const n = breakdown.length
+      reason = `Allowed — matched all ${n} part${n === 1 ? '' : 's'}, in order.`
+    }
     return {
       status: 'allowed',
       reason,
       cleaned: clean?.cleaned,
       removed: clean?.removed,
       parts: traceMatch(ast, flags, value),
+      breakdown,
     }
   }
 

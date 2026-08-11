@@ -5,6 +5,7 @@ import { Panel } from '@/ui/primitives'
 import { Check, Copy, X } from '@/ui/icons'
 import { useCopy } from '@/ui/useCopy'
 import { HighlightedValue } from './HighlightedValue'
+import { MatchBreakdown } from './MatchBreakdown'
 
 function Verdict({ status }: { status: string }) {
   if (status === 'allowed') {
@@ -82,6 +83,7 @@ export function QuickCheck() {
           }`}
         >
           <HighlightedValue value={value} parts={result.parts} fail={result.fail} />
+          {result.status === 'allowed' && <MatchBreakdown steps={result.breakdown} />}
         </div>
       )}
 
