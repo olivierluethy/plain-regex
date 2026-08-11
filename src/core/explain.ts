@@ -124,7 +124,11 @@ export function describe(node: RuleNode): string {
 
     case 'choice': {
       const opts = node.options.map(describe)
-      return `either ${joinList(opts, 'or')}`
+      // Don't read "either nothing or nothing" for a fresh, unfilled choice.
+      const filled = opts.filter((o) => o && o !== 'nothing')
+      if (filled.length === 0) return 'an empty choice — fill in the options'
+      if (filled.length === 1) return filled[0]
+      return `either ${joinList(filled, 'or')}`
     }
 
     case 'repeat':
@@ -162,6 +166,9 @@ export function describe(node: RuleNode): string {
       return node.scope === 'anywhere'
         ? `${describe(node.child)} is not allowed anywhere`
         : `${describe(node.child)} is not allowed here`
+
+    case 'raw':
+      return node.note ? node.note : `the pattern ${quote(node.source)}`
 
     default:
       return 'something'
@@ -203,6 +210,15 @@ function cap(s: string): string {
 
 export function explain(ast: RuleNode): Explanation {
   const children = ast.type === 'sequence' ? ast.children : [ast]
+
+  // An empty rule matches everything — say so plainly rather than "an exact position".
+  if (children.length === 0) {
+    return {
+      summary: 'This rule is empty, so it accepts any value. Add a block to start narrowing it down.',
+      steps: ['Match nothing yet — add a block to begin.'],
+    }
+  }
+
   const steps = children.filter(Boolean).map(stepSentence)
 
   const startAnchored = children[0]?.type === 'anchor' && (children[0] as { kind: string }).kind === 'start'
