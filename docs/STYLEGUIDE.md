@@ -212,3 +212,48 @@ vertical rail (`--border-strong`). Selected snapshots for diff get a `--brand` r
 - Empty states invite action: "Paste a URL or some sample text to begin."
 - Errors are specific and calm: "That doesn't look like a URL yet — need a scheme like https://".
 - Green/red columns are labelled "These would match" / "These would not match".
+
+---
+
+## 10. Selection & direct-manipulation surfaces
+
+These extend the existing system for the reverse (select-to-rule) workflow, drag reordering,
+single-value probing and exclusion rules. **They reuse existing tokens only** — indigo `--brand`
+for build/selection, `--pass`/`--fail` reserved for allowed/rejected, existing radii/shadows.
+
+**Selectable example surface (Build from example).** A `--surface` well (radius `lg`, `1px --border`)
+holding one sample value in **mono** (`mono` size), `user-select: text`, comfortable `1.7`
+line-height so spans are easy to grab. Already-marked spans get a persistent `--brand-tint` background
+with a `1px` `--brand`/30 underline (they read as chips baked into the text). Hover over the surface
+shows `cursor: text`.
+
+**Selection popover.** Same shell as the existing `Popover`/`Modal` (radius `lg`, `--surface`,
+`shadow-lg`, `1px --border`), but **anchored to the selected span** via fixed positioning at the
+selection's bounding rect (above the span, or below if it would clip the top). Header: an eyebrow
+label showing the selected text in mono, truncated. Body: a vertical list of plain-language intent
+buttons (same styling as segmented-list option buttons — `--surface-2` hover, `--brand-tint` +
+`--brand` when it's the recommended/primary intent). A faint caret/triangle (6px) points at the span.
+
+**Drag handle & drop indicator (BUILD).** Each reorderable chip gains a **grip handle** on its left:
+a 6-dot grip glyph in `--ink-faint`, `cursor: grab` (→ `grabbing` while dragging), `20px` wide, only
+visible/emphasised on hover or focus of the slot (keep chips calm at rest). The dragged chip lifts:
+`shadow-md`, `--surface` background, slight scale, `opacity: 0.9`. The **drop indicator** is a
+`2px` vertical bar in `--brand` (radius `full`) rendered in the gap the chip would land in. Reduced
+motion: no scale/lift, just the drop bar and an instant reorder.
+
+**Quick-check verdict.** A single-line mono input (same `.input` treatment) with an inline verdict
+pill to its right: **Allowed** uses `--pass` text on `--pass-tint`, a ✓ badge; **Rejected** uses
+`--fail` on `--fail-tint`, a ✗ badge; empty/❓ state is `--ink-faint` on `--surface-2`. Below the
+input, one calm sentence in `body-sm` `--ink-muted` names the part that matched or failed
+(e.g. "Rejected — after "alice", expected the exact text "@"."). Never shows regex.
+
+**Cleaned-output preview.** When a strip/exclude rule exists, show a labelled row (eyebrow
+"Cleaned result") with the original value struck/tinted where removed and the cleaned string in mono
+on a `--surface-2` inset. The removed span is shown in `--fail` with a strike-through; the kept text
+in `--ink`. Copy button reuses the existing ghost `Copy` control.
+
+**Voice for the new surfaces:**
+- Selection intents are verbs the user recognises: "Match this exactly", "Any letters like this",
+  "Allow anything here", "Make this optional", "Must contain this", "Strip this out", "Forbid this".
+- Rejected reasons are specific and blame the rule, not the user: "Rejected — "!" is not allowed here."
+- Exclusion label: "Cleaned result" with the stripped span called out.
