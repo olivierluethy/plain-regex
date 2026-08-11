@@ -31,7 +31,7 @@ export function Panel({
         <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="min-w-0">
             {eyebrow && <div className="eyebrow mb-0.5">{eyebrow}</div>}
-            {title && <h2 className="text-h2 text-ink">{title}</h2>}
+            {title && <h2 className="text-h3 text-ink sm:text-h2">{title}</h2>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
         </header>

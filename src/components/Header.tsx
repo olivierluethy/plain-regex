@@ -23,7 +23,7 @@ export function Header({ onOpenSettings }: { onOpenSettings: () => void }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[1720px] items-center gap-3 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-brand font-mono text-sm font-bold text-white shadow-sm">
             .*
@@ -66,7 +66,7 @@ export function Header({ onOpenSettings }: { onOpenSettings: () => void }) {
           </button>
         </div>
       </div>
-      <div className="mx-auto block max-w-[1400px] px-4 pb-3 md:hidden">
+      <div className="mx-auto block max-w-[1720px] px-4 pb-3 md:hidden">
         <RulesMenu />
       </div>
     </header>

@@ -31,8 +31,8 @@ export function FirstRun() {
   }
 
   return (
-    <div className="mb-4 rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <div className="mb-4 rounded-lg border border-border bg-surface p-3 shadow-sm sm:p-4">
+      <div className="mb-2 flex items-start justify-between gap-3 sm:mb-3">
         <div>
           <div className="eyebrow mb-0.5">New here?</div>
           <h2 className="text-h3 text-ink">Build a rule from meaning in four steps</h2>
