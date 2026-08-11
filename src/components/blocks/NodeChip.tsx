@@ -144,8 +144,6 @@ function NodeContent({ inner, advanced }: { inner: RuleNode; advanced: boolean }
 }
 
 function LeafChip({ inner }: { inner: RuleNode }) {
-  const selectNode = useStore((s) => s.selectNode)
-  const selected = useStore((s) => s.selectedNodeId === inner.id)
   const editable = LEAF_TYPES.has(inner.type)
   const isAnchor = inner.type === 'anchor'
 
@@ -154,16 +152,13 @@ function LeafChip({ inner }: { inner: RuleNode }) {
       width={inner.type === 'charType' ? 260 : 240}
       trigger={({ open, toggle }) => (
         <button
-          onClick={() => {
-            selectNode(inner.id ?? null)
-            toggle()
-          }}
+          onClick={toggle}
           aria-expanded={open}
           className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-medium transition-colors ${
             isAnchor
               ? 'border-border-strong bg-surface-2 text-ink-muted'
               : 'border-brand/25 bg-brand-tint text-brand hover:border-brand/50'
-          } ${selected ? 'ring-2 ring-brand/40' : ''}`}
+          }`}
         >
           {isAnchor && <span aria-hidden>⌖</span>}
           <span className="max-w-[220px] truncate">{chipLabel(inner)}</span>
