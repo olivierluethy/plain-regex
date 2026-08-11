@@ -115,11 +115,18 @@ function genJavaScript(input: CodegenInput, ts: boolean): Snippet {
   if (mode === 'clean') {
     const g = cf.includes('g') ? cf : cf + 'g'
     body = [
-      `const pattern = /${stripPattern || pattern}/${g};`,
+      `// Full pattern — validates the whole value`,
+      `const pattern = /${pattern}/${vf};`,
+      `// Strip pattern — the part(s) to remove`,
+      `const stripPattern = /${stripPattern || pattern}/${g};`,
+      '',
+      `export function isValid(value${strTy})${boolTy} {`,
+      `  return pattern.test(value);`,
+      `}`,
       '',
       `// ${comment('clean')}`,
       `export function clean(value${strTy})${retStr} {`,
-      `  return value.replace(pattern, '');`,
+      `  return value.replace(stripPattern, '');`,
       `}`,
     ].join('\n')
   } else {
@@ -150,11 +157,18 @@ function genReact(input: CodegenInput): Snippet {
     body = [
       `import { useMemo } from 'react'`,
       '',
-      `const PATTERN = /${stripPattern || pattern}/${g};`,
+      `// Full pattern — validates the whole value`,
+      `const PATTERN = /${pattern}/${vf};`,
+      `// Strip pattern — the part(s) to remove`,
+      `const STRIP = /${stripPattern || pattern}/${g};`,
+      '',
+      `export function useIsValid(value: string): boolean {`,
+      `  return useMemo(() => PATTERN.test(value), [value]);`,
+      `}`,
       '',
       `// ${comment('clean')}`,
       `export function useCleaned(value: string): string {`,
-      `  return useMemo(() => value.replace(PATTERN, ''), [value]);`,
+      `  return useMemo(() => value.replace(STRIP, ''), [value]);`,
       `}`,
     ].join('\n')
   } else {
@@ -189,11 +203,17 @@ function genPython(input: CodegenInput): Snippet {
     body = [
       `import re`,
       '',
-      `pattern = re.compile(${pyString(stripPattern || pattern)}${flagArg})`,
+      `# Full pattern — validates the whole value`,
+      `pattern = re.compile(${pyString(pattern)}${flagArg})`,
+      `# Strip pattern — the part(s) to remove`,
+      `strip_pattern = re.compile(${pyString(stripPattern || pattern)}${flagArg})`,
+      '',
+      `def is_valid(value: str) -> bool:`,
+      `    return pattern.search(value) is not None`,
       '',
       `# ${comment('clean')}`,
       `def clean(value: str) -> str:`,
-      `    return pattern.sub('', value)`,
+      `    return strip_pattern.sub('', value)`,
     ].join('\n')
   } else {
     body = [
@@ -225,11 +245,18 @@ function genPhp(input: CodegenInput): Snippet {
   if (mode === 'clean') {
     body = [
       `<?php`,
-      `$pattern = '/${phpSingle(stripPattern || pattern)}/${mods}';`,
+      `// Full pattern — validates the whole value`,
+      `$pattern = '/${phpSingle(pattern)}/${mods}';`,
+      `// Strip pattern — the part(s) to remove`,
+      `$stripPattern = '/${phpSingle(stripPattern || pattern)}/${mods}';`,
+      '',
+      `function is_valid(string $value): bool {`,
+      `    return preg_match($pattern, $value) === 1;`,
+      `}`,
       '',
       `// ${comment('clean')}`,
       `function clean(string $value): string {`,
-      `    return preg_replace($pattern, '', $value);`,
+      `    return preg_replace($stripPattern, '', $value);`,
       `}`,
     ].join('\n')
   } else {
@@ -259,13 +286,19 @@ function genJava(input: CodegenInput): Snippet {
   if (mode === 'clean') {
     body = [
       `import java.util.regex.Pattern;`,
-      `import java.util.regex.Matcher;`,
       '',
-      `static final Pattern PATTERN = Pattern.compile("${dq(stripPattern || pattern)}"${optArg});`,
+      `// Full pattern — validates the whole value`,
+      `static final Pattern PATTERN = Pattern.compile("${dq(pattern)}"${optArg});`,
+      `// Strip pattern — the part(s) to remove`,
+      `static final Pattern STRIP = Pattern.compile("${dq(stripPattern || pattern)}"${optArg});`,
+      '',
+      `static boolean isValid(String value) {`,
+      `    return PATTERN.matcher(value).find();`,
+      `}`,
       '',
       `// ${comment('clean')}`,
       `static String clean(String value) {`,
-      `    return PATTERN.matcher(value).replaceAll("");`,
+      `    return STRIP.matcher(value).replaceAll("");`,
       `}`,
     ].join('\n')
   } else {
@@ -303,8 +336,9 @@ function genGo(input: CodegenInput): Snippet {
   if (flags.m) inline += 'm'
   if (flags.s) inline += 's'
   const prefix = inline ? `(?${inline})` : ''
-  const src = goString(prefix + (mode === 'clean' ? stripPattern || pattern : pattern))
-  const warnings: Warning[] = src.note ? [{ level: 'note', text: src.note }] : []
+  const fullSrc = goString(prefix + pattern)
+  const stripSrc = goString(prefix + (stripPattern || pattern))
+  const warnings: Warning[] = fullSrc.note ? [{ level: 'note', text: fullSrc.note }] : []
 
   let body: string
   if (mode === 'clean') {
@@ -313,11 +347,18 @@ function genGo(input: CodegenInput): Snippet {
       '',
       `import "regexp"`,
       '',
-      `var pattern = regexp.MustCompile(${src.text})`,
+      `// Full pattern — validates the whole value`,
+      `var pattern = regexp.MustCompile(${fullSrc.text})`,
+      `// Strip pattern — the part(s) to remove`,
+      `var stripPattern = regexp.MustCompile(${stripSrc.text})`,
+      '',
+      `func IsValid(value string) bool {`,
+      `\treturn pattern.MatchString(value)`,
+      `}`,
       '',
       `// ${comment('clean')}`,
       `func Clean(value string) string {`,
-      `\treturn pattern.ReplaceAllString(value, "")`,
+      `\treturn stripPattern.ReplaceAllString(value, "")`,
       `}`,
     ].join('\n')
   } else {
@@ -326,7 +367,7 @@ function genGo(input: CodegenInput): Snippet {
       '',
       `import "regexp"`,
       '',
-      `var pattern = regexp.MustCompile(${src.text})`,
+      `var pattern = regexp.MustCompile(${fullSrc.text})`,
       '',
       `// ${comment(mode)}`,
       `func IsValid(value string) bool {`,
@@ -350,10 +391,15 @@ function genCSharp(input: CodegenInput): Snippet {
     body = [
       `using System.Text.RegularExpressions;`,
       '',
-      `static readonly Regex pattern = new Regex(@"${csVerbatim(stripPattern || pattern)}"${optArg});`,
+      `// Full pattern — validates the whole value`,
+      `static readonly Regex pattern = new Regex(@"${csVerbatim(pattern)}"${optArg});`,
+      `// Strip pattern — the part(s) to remove`,
+      `static readonly Regex strip = new Regex(@"${csVerbatim(stripPattern || pattern)}"${optArg});`,
+      '',
+      `static bool IsValid(string value) => pattern.IsMatch(value);`,
       '',
       `// ${comment('clean')}`,
-      `static string Clean(string value) => pattern.Replace(value, "");`,
+      `static string Clean(string value) => strip.Replace(value, "");`,
     ].join('\n')
   } else {
     body = [
@@ -382,11 +428,18 @@ function genRuby(input: CodegenInput): Snippet {
   let body: string
   if (mode === 'clean') {
     body = [
-      `PATTERN = /${stripPattern || pattern}/${mods}`,
+      `# Full pattern — validates the whole value`,
+      `PATTERN = /${pattern}/${mods}`,
+      `# Strip pattern — the part(s) to remove`,
+      `STRIP = /${stripPattern || pattern}/${mods}`,
+      '',
+      `def valid?(value)`,
+      `  PATTERN.match?(value)`,
+      `end`,
       '',
       `# ${comment('clean')}`,
       `def clean(value)`,
-      `  value.gsub(PATTERN, '')`,
+      `  value.gsub(STRIP, '')`,
       `end`,
     ].join('\n')
   } else {
