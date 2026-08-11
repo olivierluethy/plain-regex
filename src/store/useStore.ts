@@ -17,6 +17,7 @@ import {
   updateNode,
 } from '@/core'
 import type { RegexFlags, RepeatPreset, RuleNode, SequenceNode } from '@/core'
+import { reanchorMarks } from '@/lib/reanchor'
 import type {
   AiProvider,
   AiSettings,
@@ -99,6 +100,7 @@ interface StoreState {
   theme: ThemePref
   testMode: TestMode
   selectedNodeId: string | null
+  hoveredNodeId: string | null
   ai: AiSettings
 
   // derived
@@ -146,6 +148,7 @@ interface StoreState {
   setTheme: (theme: ThemePref) => void
   setTestMode: (mode: TestMode) => void
   selectNode: (id: string | null) => void
+  hoverNode: (id: string | null) => void
 
   // ai
   setAiProvider: (p: AiProvider) => void
@@ -208,6 +211,7 @@ export const useStore = create<StoreState>()(
         theme: 'system',
         testMode: 'perLine',
         selectedNodeId: null,
+        hoveredNodeId: null,
         ai: { provider: 'gemini', keys: {} },
 
         active: () => {
@@ -353,14 +357,28 @@ export const useStore = create<StoreState>()(
           })),
 
         setSampleValue: (text) =>
-          set((s) => ({
-            // Changing the sample invalidates the old spans → clear marks.
-            rules: replaceActive(s.rules, s.activeRuleId, (r) => ({
-              ...r,
-              sampleValue: text,
-              marks: [],
-            })),
-          })),
+          set((s) => {
+            const rule = s.rules.find((r) => r.id === s.activeRuleId)
+            if (!rule) return s
+            // Re-anchor marks across the edit; drop rules whose text was deleted.
+            const { marks, removed } = reanchorMarks(rule.sampleValue, text, rule.marks)
+            if (removed.length) {
+              let ast = rule.ast
+              for (const id of removed) ast = removeNode(ast, id) as SequenceNode
+              const label =
+                removed.length === 1
+                  ? 'Removed a rule (its text was deleted)'
+                  : `Removed ${removed.length} rules (their text was deleted)`
+              const next = commit(rule, ast, rule.flags, { force: true, label })
+              const kept = marks.filter((m) => findNode(ast, m.nodeId))
+              return {
+                rules: replaceActive(s.rules, rule.id, () => ({ ...next, sampleValue: text, marks: kept })),
+              }
+            }
+            return {
+              rules: replaceActive(s.rules, rule.id, (r) => ({ ...r, sampleValue: text, marks })),
+            }
+          }),
 
         addFromSelection: ({ start, end, node, label }) =>
           set((s) => {
@@ -447,6 +465,7 @@ export const useStore = create<StoreState>()(
         setTheme: (theme) => set({ theme }),
         setTestMode: (mode) => set({ testMode: mode }),
         selectNode: (id) => set({ selectedNodeId: id }),
+        hoverNode: (id) => set({ hoveredNodeId: id }),
 
         setAiProvider: (p) => set((s) => ({ ai: { ...s.ai, provider: p } })),
         setAiKey: (p, key) =>
