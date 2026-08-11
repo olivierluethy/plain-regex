@@ -434,6 +434,11 @@ export function exportRuleJson(rule: Rule): string {
   )
 }
 
+/** A clean, id-free copy of an AST for sending to an AI provider. */
+export function stripIdsForAi(node: RuleNode): unknown {
+  return stripIds(node)
+}
+
 /** Strip editor ids for a clean, portable export. */
 function stripIds(node: RuleNode): unknown {
   const rec = node as unknown as Record<string, unknown>
