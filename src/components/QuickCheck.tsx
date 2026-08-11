@@ -4,6 +4,7 @@ import { useStore } from '@/store/useStore'
 import { Panel } from '@/ui/primitives'
 import { Check, Copy, X } from '@/ui/icons'
 import { useCopy } from '@/ui/useCopy'
+import { HighlightedValue } from './HighlightedValue'
 
 function Verdict({ status }: { status: string }) {
   if (status === 'allowed') {
@@ -63,16 +64,22 @@ export function QuickCheck() {
         <Verdict status={result.status} />
         <p
           className={`pt-1 text-body-sm ${
-            result.status === 'allowed'
-              ? 'text-ink'
-              : result.status === 'rejected'
-                ? 'text-ink'
-                : 'text-ink-muted'
+            result.status === 'empty' ? 'text-ink-muted' : 'text-ink'
           }`}
         >
           {result.reason}
         </p>
       </div>
+
+      {value && (result.status === 'allowed' || result.status === 'rejected') && (
+        <div
+          className={`mt-3 rounded-md border-l-2 px-3 py-2 ${
+            result.status === 'allowed' ? 'border-pass bg-pass-tint/40' : 'border-fail bg-fail-tint/30'
+          }`}
+        >
+          <HighlightedValue value={value} parts={result.parts} fail={result.fail} />
+        </div>
+      )}
 
       {result.cleaned !== undefined && result.removed && result.removed.length > 0 && (
         <div className="mt-4 rounded-lg border border-border bg-surface-2/50 p-3">

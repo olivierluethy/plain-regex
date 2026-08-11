@@ -1,9 +1,18 @@
-import { Fragment, useMemo } from 'react'
-import { buildRegExp, findMatches, testLines, type RegexFlags } from '@/core'
+import { Fragment, useMemo, useState } from 'react'
+import {
+  buildRegExp,
+  findMatches,
+  quickCheck,
+  testLines,
+  type LineResult,
+  type RegexFlags,
+  type RuleNode,
+} from '@/core'
 import { useStore } from '@/store/useStore'
 import { Panel, Segmented } from '@/ui/primitives'
 import { Check, Copy, X } from '@/ui/icons'
 import { useCopy } from '@/ui/useCopy'
+import { HighlightedValue } from './HighlightedValue'
 
 const FLAG_INFO: { key: keyof RegexFlags; label: string; title: string }[] = [
   { key: 'i', label: 'i', title: 'Ignore capitalisation' },
@@ -95,7 +104,7 @@ export function TestPanel() {
       ) : text.trim() === '' ? (
         <p className="mt-4 text-body-sm text-ink-muted">Results will appear here as you type.</p>
       ) : testMode === 'perLine' ? (
-        <PerLineResults compiled={compiled} text={text} />
+        <PerLineResults compiled={compiled} text={text} ast={rule.ast} flags={rule.flags} />
       ) : (
         <WholeTextResults compiled={compiled} text={text} />
       )}
@@ -106,9 +115,13 @@ export function TestPanel() {
 function PerLineResults({
   compiled,
   text,
+  ast,
+  flags,
 }: {
   compiled: ReturnType<typeof buildRegExp>
   text: string
+  ast: RuleNode
+  flags: RegexFlags
 }) {
   const rows = testLines(compiled, text).filter((r) => r.line.trim() !== '')
   const passCount = rows.filter((r) => r.matched).length
@@ -119,32 +132,58 @@ function PerLineResults({
         <span className="font-medium text-pass">{passCount} match</span>
         <span>·</span>
         <span className="font-medium text-fail">{rows.length - passCount} no match</span>
+        <span className="ml-auto text-ink-faint">Click “Why?” for the reason</span>
       </div>
       <ul className="flex flex-col gap-1.5">
         {rows.map((r, i) => (
-          <li
-            key={i}
-            className={`flex items-start gap-2.5 rounded-md border-l-2 px-3 py-2 ${
-              r.matched
-                ? 'border-pass bg-pass-tint/50'
-                : 'border-fail bg-fail-tint/40'
-            }`}
-          >
-            <span
-              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded ${
-                r.matched ? 'bg-pass/15 text-pass' : 'bg-fail/15 text-fail'
-              }`}
-            >
-              {r.matched ? <Check width={13} height={13} /> : <X width={13} height={13} />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <code className="block break-all font-mono text-mono-sm text-ink">{r.line}</code>
-              {r.matched && <CaptureList groups={r.groups} named={r.namedGroups} />}
-            </div>
-          </li>
+          <LineRow key={i} r={r} ast={ast} flags={flags} />
         ))}
       </ul>
     </div>
+  )
+}
+
+function LineRow({ r, ast, flags }: { r: LineResult; ast: RuleNode; flags: RegexFlags }) {
+  const [open, setOpen] = useState(false)
+  const result = useMemo(() => quickCheck(ast, flags, r.line), [ast, flags, r.line])
+
+  return (
+    <li
+      className={`rounded-md border-l-2 px-3 py-2 ${
+        r.matched ? 'border-pass bg-pass-tint/50' : 'border-fail bg-fail-tint/40'
+      }`}
+    >
+      <div className="flex items-start gap-2.5">
+        <span
+          className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded ${
+            r.matched ? 'bg-pass/15 text-pass' : 'bg-fail/15 text-fail'
+          }`}
+        >
+          {r.matched ? <Check width={13} height={13} /> : <X width={13} height={13} />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="block">
+            <HighlightedValue value={r.line} parts={result.parts} fail={result.fail} />
+          </div>
+          {r.matched && <CaptureList groups={r.groups} named={r.namedGroups} />}
+        </div>
+        <button
+          className="btn-ghost btn-sm shrink-0"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          title={result.reason}
+        >
+          Why?
+        </button>
+      </div>
+      {open && (
+        <p
+          className={`mt-1.5 pl-8 text-body-sm ${r.matched ? 'text-pass' : 'text-fail'}`}
+        >
+          {result.reason}
+        </p>
+      )}
+    </li>
   )
 }
 
