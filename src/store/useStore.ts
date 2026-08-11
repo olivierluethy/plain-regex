@@ -100,6 +100,7 @@ interface StoreState {
   theme: ThemePref
   testMode: TestMode
   selectedNodeId: string | null
+  selectedNodeIds: string[]
   hoveredNodeId: string | null
   ai: AiSettings
 
@@ -124,6 +125,13 @@ interface StoreState {
   duplicateNodeById: (id: string) => void
   setRepeatPreset: (id: string, preset: RepeatPreset, n?: number, m?: number) => void
   loadAst: (ast: unknown, label: string) => { ok: boolean; error?: string }
+
+  // multi-select & bulk deletion
+  setSelection: (ids: string[]) => void
+  toggleSelection: (id: string) => void
+  clearSelection: () => void
+  deleteSelected: () => void
+  clearRule: () => void
 
   // flags & test input
   setFlag: (flag: keyof RegexFlags, value: boolean) => void
@@ -211,6 +219,7 @@ export const useStore = create<StoreState>()(
         theme: 'system',
         testMode: 'perLine',
         selectedNodeId: null,
+        selectedNodeIds: [],
         hoveredNodeId: null,
         ai: { provider: 'gemini', keys: {} },
 
@@ -262,7 +271,7 @@ export const useStore = create<StoreState>()(
         renameRule: (id, name) =>
           set((s) => ({ rules: replaceActive(s.rules, id, (r) => ({ ...r, name })) })),
 
-        setActiveRule: (id) => set({ activeRuleId: id, selectedNodeId: null }),
+        setActiveRule: (id) => set({ activeRuleId: id, selectedNodeId: null, selectedNodeIds: [] }),
 
         importRule: (json) => {
           try {
@@ -304,7 +313,10 @@ export const useStore = create<StoreState>()(
 
         removeNodeById: (id) => {
           mutateAst((ast) => removeNode(ast, id) as SequenceNode)
-          if (get().selectedNodeId === id) set({ selectedNodeId: null })
+          set((s) => ({
+            selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
+            selectedNodeIds: s.selectedNodeIds.filter((x) => x !== id),
+          }))
         },
 
         moveNode: (parentId, from, to) =>
@@ -338,6 +350,48 @@ export const useStore = create<StoreState>()(
             return { ok: false, error: e instanceof Error ? e.message : 'Invalid rule.' }
           }
         },
+
+        setSelection: (ids) => set({ selectedNodeIds: ids }),
+
+        toggleSelection: (id) =>
+          set((s) => ({
+            selectedNodeIds: s.selectedNodeIds.includes(id)
+              ? s.selectedNodeIds.filter((x) => x !== id)
+              : [...s.selectedNodeIds, id],
+          })),
+
+        clearSelection: () => set({ selectedNodeIds: [] }),
+
+        deleteSelected: () =>
+          set((s) => {
+            const rule = s.rules.find((r) => r.id === s.activeRuleId)
+            if (!rule) return s
+            const ids = s.selectedNodeIds
+            if (ids.length === 0) return s
+            let ast = rule.ast
+            for (const id of ids) ast = removeNode(ast, id) as SequenceNode
+            const label = ids.length === 1 ? 'Removed a block' : `Removed ${ids.length} blocks`
+            const next = commit(rule, ast, rule.flags, { force: true, label })
+            const marks = rule.marks.filter((m) => findNode(ast, m.nodeId))
+            return {
+              rules: replaceActive(s.rules, rule.id, () => ({ ...next, marks })),
+              selectedNodeIds: [],
+              selectedNodeId: null,
+            }
+          }),
+
+        clearRule: () =>
+          set((s) => {
+            const rule = s.rules.find((r) => r.id === s.activeRuleId)
+            if (!rule) return s
+            const ast = emptyRuleAst()
+            const next = commit(rule, ast, rule.flags, { force: true, label: 'Cleared the rule' })
+            return {
+              rules: replaceActive(s.rules, rule.id, () => ({ ...next, marks: [] })),
+              selectedNodeIds: [],
+              selectedNodeId: null,
+            }
+          }),
 
         setFlag: (flag, value) =>
           set((s) => {
