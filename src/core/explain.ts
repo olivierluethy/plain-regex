@@ -1,6 +1,7 @@
 // explain(node) — plain-English projection of the AST.
 // No regex vocabulary leaks out; this is what Simple mode reads from.
 
+import { compile } from './compile'
 import type { CharTypeKind, RepeatPreset, RuleNode } from './types'
 
 function quote(text: string): string {
@@ -222,4 +223,47 @@ export function explain(ast: RuleNode): Explanation {
   }
 
   return { summary, steps: steps.length ? steps : ['Match nothing yet — add a block to begin.'] }
+}
+
+/** One hoverable regex segment, mapped to the top-level block that produced it. */
+export interface RegexSegment {
+  nodeId: string
+  /** The compiled regex fragment for this block. */
+  text: string
+  /** A one-line "what happens here" note for step-through. */
+  note: string
+}
+
+function segmentNote(node: RuleNode): string {
+  switch (node.type) {
+    case 'anchor':
+      return node.kind === 'start'
+        ? 'Anchors to the very start of the text.'
+        : node.kind === 'end'
+          ? 'Requires the very end of the text here.'
+          : 'Requires a word boundary here.'
+    case 'contains':
+      return `Somewhere it must contain ${describe(node.child)}.`
+    case 'forbid':
+      return node.scope === 'anywhere'
+        ? `${cap(describe(node.child))} is not allowed anywhere.`
+        : `${cap(describe(node.child))} is not allowed here.`
+    default:
+      return `Matches ${describe(node)}.`
+  }
+}
+
+/**
+ * Split the compiled pattern into hoverable segments, one per top-level block.
+ * Concatenating `text` reproduces the full pattern; empty fragments are skipped.
+ */
+export function regexSegments(ast: RuleNode): RegexSegment[] {
+  const kids = ast.type === 'sequence' ? ast.children : [ast]
+  const out: RegexSegment[] = []
+  for (const k of kids) {
+    const text = compile(k)
+    if (!text) continue
+    out.push({ nodeId: k.id ?? '', text, note: segmentNote(k) })
+  }
+  return out
 }
