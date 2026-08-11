@@ -59,10 +59,15 @@ export default {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        'slide-in': {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
       },
       animation: {
         'flip-in': 'flip-in 260ms ease-out',
         'fade-in': 'fade-in 160ms ease-out',
+        'slide-in': 'slide-in 220ms ease-out',
       },
     },
   },

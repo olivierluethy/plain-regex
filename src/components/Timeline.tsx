@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
-import { diffSnapshots } from '@/core'
+import { useEffect, useMemo, useState } from 'react'
+import { buildRegExp, diffSnapshots, explain } from '@/core'
 import { useStore } from '@/store/useStore'
-import { Panel } from '@/ui/primitives'
 import { Check, Clock, X } from '@/ui/icons'
 import type { Snapshot } from '@/store/types'
 
@@ -10,122 +9,140 @@ function timeLabel(ts: number): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export function Timeline() {
+/** History as a right slide-over drawer — opens immediately, records automatically. */
+export function HistoryDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const rule = useStore((s) => s.active())
   const restoreSnapshot = useStore((s) => s.restoreSnapshot)
-  const [selected, setSelected] = useState<string[]>([])
+  const [expanded, setExpanded] = useState<string | null>(null)
 
-  // Newest first for display.
-  const ordered = useMemo(() => [...rule.history].reverse(), [rule.history])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  // Newest first, but keep each snapshot's chronological index for diffing.
+  const ordered = useMemo(
+    () => rule.history.map((snap, i) => ({ snap, i })).reverse(),
+    [rule.history],
+  )
   const currentId = rule.history[rule.historyIndex]?.id
 
-  const toggle = (id: string) =>
-    setSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id)
-      if (prev.length >= 2) return [prev[1], id]
-      return [...prev, id]
-    })
+  if (!open) return null
 
-  const pair = selected
-    .map((id) => rule.history.find((h) => h.id === id))
-    .filter(Boolean) as Snapshot[]
-  const [a, b] =
-    pair.length === 2
-      ? [pair[0], pair[1]].sort((x, y) => x.timestamp - y.timestamp)
-      : [undefined, undefined]
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={onClose} />
+      <aside className="relative flex h-full w-full max-w-[420px] flex-col border-l border-border bg-surface shadow-lg motion-safe:animate-slide-in">
+        <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+          <div>
+            <div className="eyebrow mb-0.5">History</div>
+            <h2 className="text-h2 text-ink">How this rule changed</h2>
+            <p className="mt-1 text-body-sm text-ink-muted">Saved automatically as you edit.</p>
+          </div>
+          <button className="btn-icon h-8 w-8 shrink-0" onClick={onClose} aria-label="Close history">
+            <X width={17} height={17} />
+          </button>
+        </header>
 
+        <div className="flex-1 overflow-y-auto scroll-thin px-5 py-4">
+          {rule.history.length <= 1 && (
+            <p className="mb-4 rounded-md border border-dashed border-border bg-surface-2/40 px-3 py-3 text-body-sm text-ink-muted">
+              Your changes are saved here automatically as you edit — no setup needed. Make a change
+              to the rule and it will appear at the top.
+            </p>
+          )}
+
+          <ol className="relative flex flex-col gap-1 border-l border-border-strong pl-4">
+            {ordered.map(({ snap, i }) => {
+              const isCurrent = snap.id === currentId
+              const isOpen = expanded === snap.id
+              const prev = i > 0 ? rule.history[i - 1] : null
+              return (
+                <li key={snap.id} className="relative">
+                  <span
+                    className={`absolute -left-[1.32rem] top-3 h-2.5 w-2.5 rounded-full border-2 ${
+                      isCurrent ? 'border-brand bg-brand' : 'border-border-strong bg-surface'
+                    }`}
+                  />
+                  <div
+                    className={`rounded-md transition-colors ${
+                      isOpen ? 'bg-surface-2' : 'hover:bg-surface-2/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 px-2.5 py-2">
+                      <button
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        onClick={() => setExpanded(isOpen ? null : snap.id)}
+                      >
+                        <span className="inline-flex items-center gap-1 font-mono text-[0.75rem] text-ink-muted">
+                          <Clock width={12} height={12} />
+                          {timeLabel(snap.timestamp)}
+                        </span>
+                        <span className="truncate text-body-sm text-ink">{snap.autoLabel}</span>
+                        {isCurrent && (
+                          <span className="shrink-0 rounded bg-brand/15 px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase text-brand">
+                            now
+                          </span>
+                        )}
+                      </button>
+                      {!isCurrent && (
+                        <button
+                          className="btn-secondary btn-sm shrink-0"
+                          onClick={() => restoreSnapshot(snap.id)}
+                        >
+                          Restore
+                        </button>
+                      )}
+                    </div>
+                    {isOpen && <SnapshotDetail snap={snap} prev={prev} />}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function SnapshotDetail({ snap, prev }: { snap: Snapshot; prev: Snapshot | null }) {
+  const compiled = useMemo(() => buildRegExp(snap.ast, snap.flags), [snap])
+  const summary = useMemo(() => explain(snap.ast).summary, [snap])
   const diff = useMemo(
-    () => (a && b ? diffSnapshots(a.ast, a.flags, b.ast, b.flags) : null),
-    [a, b],
+    () => (prev ? diffSnapshots(prev.ast, prev.flags, snap.ast, snap.flags) : null),
+    [prev, snap],
   )
 
   return (
-    <Panel
-      eyebrow="History"
-      title="How this rule changed"
-      actions={
-        selected.length > 0 && (
-          <button className="btn-ghost btn-sm" onClick={() => setSelected([])}>
-            Clear selection
-          </button>
-        )
-      }
-    >
-      <p className="mb-3 text-body-sm text-ink-muted">
-        Every change is saved. Pick any two versions to see which examples flipped between matching
-        and not.
-      </p>
+    <div className="border-t border-border px-3 py-3">
+      <div className="mb-2 overflow-x-auto scroll-thin rounded-md border border-border bg-surface-2 px-2.5 py-1.5">
+        <code className="whitespace-pre font-mono text-mono-sm text-ink">
+          <span className="text-ink-faint">/</span>
+          {compiled.source}
+          <span className="text-ink-faint">/{compiled.flags}</span>
+        </code>
+      </div>
+      <p className="mb-3 text-body-sm text-ink-muted">{summary}</p>
 
-      <ol className="relative flex flex-col gap-1 border-l border-border-strong pl-4">
-        {ordered.map((snap) => {
-          const isCurrent = snap.id === currentId
-          const isSelected = selected.includes(snap.id)
-          return (
-            <li key={snap.id} className="relative">
-              <span
-                className={`absolute -left-[1.32rem] top-2.5 h-2.5 w-2.5 rounded-full border-2 ${
-                  isCurrent
-                    ? 'border-brand bg-brand'
-                    : 'border-border-strong bg-surface'
-                }`}
-              />
-              <div
-                className={`flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors ${
-                  isSelected ? 'bg-brand-tint ring-1 ring-brand/40' : 'hover:bg-surface-2'
-                }`}
-              >
-                <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => toggle(snap.id)}>
-                  <span className="inline-flex items-center gap-1 font-mono text-[0.75rem] text-ink-muted">
-                    <Clock width={12} height={12} />
-                    {timeLabel(snap.timestamp)}
-                  </span>
-                  <span className="truncate text-body-sm text-ink">{snap.autoLabel}</span>
-                  {isCurrent && (
-                    <span className="shrink-0 rounded bg-brand/15 px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase text-brand">
-                      now
-                    </span>
-                  )}
-                </button>
-                {!isCurrent && (
-                  <button
-                    className="btn-ghost btn-sm shrink-0"
-                    onClick={() => restoreSnapshot(snap.id)}
-                  >
-                    Restore
-                  </button>
-                )}
-              </div>
-            </li>
-          )
-        })}
-      </ol>
-
-      {a && b && diff && (
-        <div className="mt-4 rounded-lg border border-border bg-surface-2/50 p-4">
-          <div className="mb-3 text-body-sm text-ink">
-            Comparing <b>{timeLabel(a.timestamp)}</b> → <b>{timeLabel(b.timestamp)}</b>
-          </div>
-          {diff.unchanged ? (
-            <p className="text-body-sm text-ink-muted">These two versions match the same text.</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DiffColumn
-                title="Newly allowed"
-                items={diff.nowAllowed}
-                tone="pass"
-                empty="Nothing new was allowed."
-              />
-              <DiffColumn
-                title="No longer allowed"
-                items={diff.noLongerAllowed}
-                tone="fail"
-                empty="Nothing was newly blocked."
-              />
-            </div>
-          )}
+      {!prev ? (
+        <p className="text-body-sm text-ink-muted">This is the first version of the rule.</p>
+      ) : diff && diff.unchanged ? (
+        <p className="text-body-sm text-ink-muted">Matches the same text as the previous version.</p>
+      ) : diff ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DiffColumn title="Newly allowed" items={diff.nowAllowed} tone="pass" empty="Nothing new was allowed." />
+          <DiffColumn
+            title="No longer allowed"
+            items={diff.noLongerAllowed}
+            tone="fail"
+            empty="Nothing was newly blocked."
+          />
         </div>
-      )}
-    </Panel>
+      ) : null}
+    </div>
   )
 }
 
@@ -142,11 +159,10 @@ function DiffColumn({
 }) {
   const Icon = tone === 'pass' ? Check : X
   const badge = tone === 'pass' ? 'bg-pass/15 text-pass' : 'bg-fail/15 text-fail'
-  const row =
-    tone === 'pass' ? 'border-pass bg-pass-tint/50' : 'border-fail bg-fail-tint/50'
+  const row = tone === 'pass' ? 'border-pass bg-pass-tint/50' : 'border-fail bg-fail-tint/50'
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-1.5 flex items-center gap-2">
         <span className={`grid h-5 w-5 place-items-center rounded ${badge}`}>
           <Icon width={13} height={13} />
         </span>
@@ -155,7 +171,7 @@ function DiffColumn({
       {items.length ? (
         <ul className="flex flex-col gap-1.5">
           {items.map((v, i) => (
-            <li key={i} className={`rounded-md border-l-2 px-3 py-1.5 ${row}`}>
+            <li key={i} className={`rounded-md border-l-2 px-2.5 py-1 ${row}`}>
               <code className="break-all font-mono text-mono-sm text-ink">{v || '(empty)'}</code>
             </li>
           ))}

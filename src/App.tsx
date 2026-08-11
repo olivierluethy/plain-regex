@@ -10,7 +10,7 @@ import { QuickCheck } from '@/components/QuickCheck'
 import { ExamplesPanel } from '@/components/ExamplesPanel'
 import { CodePanel } from '@/components/CodePanel'
 import { UrlMode } from '@/components/UrlMode'
-import { Timeline } from '@/components/Timeline'
+import { HistoryDrawer } from '@/components/Timeline'
 import { AiAssist } from '@/components/AiAssist'
 import { SettingsModal } from '@/components/SettingsModal'
 import { FirstRun } from '@/components/FirstRun'
@@ -95,12 +95,6 @@ export default function App() {
           <CodePanel />
         </div>
 
-        {historyOpen && (
-          <div className="mt-5">
-            <Timeline />
-          </div>
-        )}
-
         <footer className="mt-10 border-t border-border pt-5 text-center text-body-sm text-ink-muted">
           PlainRegex — build patterns from meaning. Everything runs in your browser; nothing is sent
           anywhere unless you turn on AI assist.
@@ -108,6 +102,7 @@ export default function App() {
       </main>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </div>
   )
 }
