@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { cleanValue, generateExamples, hasStrips } from '@/core'
+import { cleanValue, diagnose, generateExamples, hasStrips, traceMatch } from '@/core'
 import { useStore } from '@/store/useStore'
 import { Panel } from '@/ui/primitives'
 import { Check, Scissors, X } from '@/ui/icons'
+import { HighlightedValue } from './HighlightedValue'
 
 function ExampleValue({ value }: { value: string }) {
   if (value === '') return <span className="italic text-ink-faint">(empty)</span>
@@ -14,6 +15,10 @@ export function ExamplesPanel() {
   const { positives, negatives } = useMemo(
     () => generateExamples(rule.ast, rule.flags, 5),
     [rule.ast, rule.flags],
+  )
+  const conflict = useMemo(
+    () => (positives.length === 0 ? diagnose(rule.ast) : null),
+    [positives.length, rule.ast],
   )
 
   const cleanedDemo = useMemo(() => {
@@ -42,10 +47,17 @@ export function ExamplesPanel() {
                   key={i}
                   className="animate-flip-in rounded-md border-l-2 border-pass bg-pass-tint/50 px-3 py-1.5 text-ink"
                 >
-                  <ExampleValue value={v} />
+                  <HighlightedValue value={v} parts={traceMatch(rule.ast, rule.flags, v)} />
                 </li>
               ))}
             </ul>
+          ) : conflict ? (
+            <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 px-3 py-2.5 text-body-sm text-warn">
+              <span aria-hidden className="mt-px">
+                ⚠
+              </span>
+              <span>{conflict}</span>
+            </div>
           ) : (
             <p className="text-body-sm text-ink-muted">Add a block to see matching examples.</p>
           )}

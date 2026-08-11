@@ -1,4 +1,4 @@
-import { findNode, nodes, type RepeatPreset, type RuleNode } from '@/core'
+import { describe, findNode, nodes, type RepeatPreset, type RuleNode } from '@/core'
 import { useStore } from '@/store/useStore'
 import { MenuItem, Popover } from '@/ui/primitives'
 import { Dots, Plus, X } from '@/ui/icons'
@@ -27,6 +27,7 @@ export function NodeChip(props: SlotProps) {
   const removeNodeById = useStore((s) => s.removeNodeById)
   const duplicateNodeById = useStore((s) => s.duplicateNodeById)
   const moveNode = useStore((s) => s.moveNode)
+  const hoverNode = useStore((s) => s.hoverNode)
 
   const setRepeat = (preset: RepeatPreset) => {
     if (isRepeat) setRepeatPreset(node.id!, preset, node.min || 1, node.max ?? 3)
@@ -81,7 +82,12 @@ export function NodeChip(props: SlotProps) {
   )
 
   return (
-    <span className="group/slot inline-flex items-center gap-1 rounded-md">
+    <span
+      className="group/slot inline-flex items-center gap-1 rounded-md"
+      title={describe(node)}
+      onMouseEnter={() => hoverNode(node.id ?? null)}
+      onMouseLeave={() => hoverNode(null)}
+    >
       <NodeContent inner={inner} advanced={advanced} />
       {isRepeat && (
         <Popover

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { nodes } from '@/core'
+import { describe, findNode, nodes } from '@/core'
 import type { Mark } from '@/store/types'
 import { useStore } from '@/store/useStore'
 import { Panel } from '@/ui/primitives'
-import { Ban, Scissors, Sparkles } from '@/ui/icons'
+import { Ban, Scissors, Sparkles, X } from '@/ui/icons'
 import { buildIntents, type Intent } from '@/lib/intents'
 
 interface SelState {
@@ -34,11 +34,32 @@ export function BuildFromExample() {
   const addFromSelection = useStore((s) => s.addFromSelection)
   const addChild = useStore((s) => s.addChild)
   const removeNodeById = useStore((s) => s.removeNodeById)
+  const hoverNode = useStore((s) => s.hoverNode)
+  const hoveredNodeId = useStore((s) => s.hoveredNodeId)
 
   const value = rule.sampleValue
   const containerRef = useRef<HTMLDivElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const [sel, setSel] = useState<SelState | null>(null)
+
+  // Hover-to-inspect a marked span (shows the rule + a Remove control).
+  const [markHover, setMarkHover] = useState<{ nodeId: string; label: string; rect: { left: number; bottom: number } } | null>(null)
+  const closeTimer = useRef<number | null>(null)
+  const cancelClose = () => {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    closeTimer.current = null
+  }
+  const scheduleClose = () => {
+    cancelClose()
+    closeTimer.current = window.setTimeout(() => setMarkHover(null), 160)
+  }
+  const openMark = (nodeId: string, el: HTMLElement) => {
+    cancelClose()
+    hoverNode(nodeId)
+    const node = findNode(rule.ast, nodeId)
+    const r = el.getBoundingClientRect()
+    setMarkHover({ nodeId, label: node ? describe(node) : 'this rule', rect: { left: r.left + r.width / 2, bottom: r.bottom } })
+  }
 
   // Close the popover on scroll / resize / Escape / outside click.
   useEffect(() => {
@@ -91,7 +112,10 @@ export function BuildFromExample() {
     setSel(null)
   }
 
-  const marks = usableMarks(rule.marks, value.length)
+  const marks = usableMarks(
+    rule.marks.filter((m) => findNode(rule.ast, m.nodeId)),
+    value.length,
+  )
 
   // "Match whole value" toggles start/end anchors on the rule.
   const kids = rule.ast.children
@@ -109,15 +133,15 @@ export function BuildFromExample() {
     }
   }
 
-  // Build the rendered, selectable segments.
-  const segments: { text: string; mark: boolean }[] = []
+  // Build the rendered, selectable segments (marked spans carry their node id).
+  const segments: { text: string; nodeId?: string }[] = []
   let cursor = 0
   for (const m of marks) {
-    if (m.start > cursor) segments.push({ text: value.slice(cursor, m.start), mark: false })
-    segments.push({ text: value.slice(m.start, m.end), mark: true })
+    if (m.start > cursor) segments.push({ text: value.slice(cursor, m.start) })
+    segments.push({ text: value.slice(m.start, m.end), nodeId: m.nodeId })
     cursor = m.end
   }
-  if (cursor < value.length) segments.push({ text: value.slice(cursor), mark: false })
+  if (cursor < value.length) segments.push({ text: value.slice(cursor) })
 
   return (
     <Panel
@@ -156,10 +180,19 @@ export function BuildFromExample() {
             className="select-text whitespace-pre-wrap break-all rounded-lg border border-border bg-surface px-3 py-3 font-mono text-mono leading-[1.7] text-ink [cursor:text]"
           >
             {segments.map((seg, i) =>
-              seg.mark ? (
+              seg.nodeId ? (
                 <span
                   key={i}
-                  className="rounded-sm bg-brand-tint px-0.5 text-brand underline decoration-brand/40 underline-offset-2"
+                  onMouseEnter={(e) => openMark(seg.nodeId!, e.currentTarget)}
+                  onMouseLeave={() => {
+                    hoverNode(null)
+                    scheduleClose()
+                  }}
+                  className={`rounded-sm px-0.5 underline decoration-brand/40 underline-offset-2 ${
+                    hoveredNodeId === seg.nodeId
+                      ? 'bg-brand-tint font-semibold text-brand ring-1 ring-brand'
+                      : 'bg-brand-tint text-brand'
+                  }`}
                 >
                   {seg.text}
                 </span>
@@ -168,9 +201,10 @@ export function BuildFromExample() {
               ),
             )}
           </div>
-          <p className="mt-2 text-body-sm text-ink-muted">
-            Drag to select a span, then pick what it should mean. New blocks appear in Build,
-            left-to-right.
+          <p className="mt-2 flex items-center gap-1.5 text-body-sm text-ink-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Drag to select a span → pick what it means. Hover a marked span to inspect or remove its
+            rule.
           </p>
         </>
       ) : (
@@ -224,6 +258,36 @@ export function BuildFromExample() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {markHover && (
+        <div
+          className="fixed z-40 w-60 animate-fade-in rounded-lg border border-border bg-surface p-2 shadow-lg"
+          style={{
+            left: Math.min(Math.max(markHover.rect.left, 130), window.innerWidth - 130),
+            top: markHover.rect.bottom + 8,
+            transform: 'translateX(-50%)',
+          }}
+          onMouseEnter={cancelClose}
+          onMouseLeave={() => {
+            hoverNode(null)
+            setMarkHover(null)
+          }}
+        >
+          <div className="eyebrow px-1 pb-1 text-[0.6875rem]">This rule</div>
+          <p className="px-1 pb-2 text-body-sm text-ink">{markHover.label}</p>
+          <button
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-fail transition-colors hover:bg-fail-tint"
+            onClick={() => {
+              removeNodeById(markHover.nodeId)
+              hoverNode(null)
+              setMarkHover(null)
+            }}
+          >
+            <X width={14} height={14} />
+            Remove this rule
+          </button>
         </div>
       )}
     </Panel>
