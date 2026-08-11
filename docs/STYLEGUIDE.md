@@ -294,3 +294,43 @@ the snippet with the banner; a **note** (e.g. a dropped `g` flag) sits above the
 
 **Voice:** "Use it in your code". Buttons: "Copy code", "Copy pattern". Warnings name the limitation and
 the fix: "Go's RE2 engine has no lookahead — 'must contain' / 'not allowed' rules can't compile here."
+
+---
+
+## 12. Explanations, rule↔text linking & onboarding
+
+Extends the system to connect rules to the tested text and explain outcomes. **Reuses existing tokens.**
+
+**Per-result reason (why matched / why not).** Each test row and the Quick check expose a one-line
+reason and expand (click) to detail. Pass reasons use `--pass`; fail reasons use `--fail`, name the
+**first failing condition**, and end with what would satisfy it. The callout is a tinted row (radius `md`,
+`--pass-tint` / `--fail-tint`, matching left border 2px) holding the reason in `body-sm` and, below it, the
+value re-rendered with **character highlights**: the matched prefix in `--pass-tint`, the exact failure
+point in `--fail` (bg `--fail-tint`, weight 600), untouched tail in `--ink-muted`.
+
+**Character ↔ block highlight.** Inside any rendered value (Sample value, matched corpus lines, matching
+examples), a span governed by a specific block is tinted `--brand-tint`. When a BUILD block is hovered,
+the span it governs gets a stronger cue: `--brand` text on `--brand-tint` with a `1px --brand` ring
+(radius `sm`). Hover is a two-way link — hovering the span and hovering the block both light the pair.
+Reduced motion: no transition, just the colour change.
+
+**Block tooltip.** Hovering a block shows its plain effect ("requires one or more digits here") — a small
+`--surface` tooltip (radius `md`, `shadow-md`, `1px --border`, `body-sm`) or the native title, anchored
+under the chip. Never shows regex in Simple mode.
+
+**Sample-value rule popover (inspect / remove).** Hovering a marked span in the Sample value raises a
+popover (existing Popover shell) listing the governing rule(s) in plain English, each with a small
+**Remove** control (danger-ghost: `--fail` text, `--fail-tint` hover). Removing updates blocks, regex,
+examples, tests and history.
+
+**Diagnostic banner (unsatisfiable rule).** When no value can match, the examples "would match" column is
+replaced by a diagnostic: `--warn` icon + text on a faint `--warn`-tinted row (radius `md`, `1px` tinted
+border), naming the conflicting constraints ("requires 'c' but forbids 'example' — no value satisfies all").
+
+**Onboarding hints.** Unobtrusive, dismissible. A per-panel one-line hint sits under the panel title in
+`body-sm --ink-muted`, prefixed by a small `--brand` dot. A first-run explainer is a dismissible card
+(`--surface`, `1px --border`, radius `lg`) with the 4-step flow; dismissal persists in `localStorage`.
+Empty states already invite action — keep them, add a hint only where the next action isn't obvious.
+
+**Voice:** reasons are specific and blame the rule ("No match — needs a “c” somewhere, but there is
+none"). Hints are short imperatives ("Select part of the value to turn it into a rule").
