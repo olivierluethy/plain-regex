@@ -4,7 +4,7 @@ import { MenuItem, Popover } from '@/ui/primitives'
 import { Dots, Plus, X } from '@/ui/icons'
 import { chipLabel, repeatBadge, REPEAT_OPTIONS } from './labels'
 import { NodeEditor } from './NodeEditors'
-import { DndReorder, OverlayChip, SortableRow } from './Sortable'
+import { DndReorder, OverlayChip } from './Sortable'
 
 interface SlotProps {
   node: RuleNode
@@ -239,24 +239,19 @@ function GroupContainer({ node, advanced }: { node: Extract<RuleNode, { type: 'g
             const n = findNode(node, id)
             return n ? <OverlayChip node={n} /> : null
           }}
-        >
-          {node.children.map((c, i) => (
-            <SortableRow key={c.id} id={c.id!}>
-              {({ handle }) => (
-                <span className="inline-flex items-center gap-0.5">
-                  {handle}
-                  <NodeChip
-                    node={c}
-                    parentId={node.id}
-                    index={i}
-                    siblingCount={node.children.length}
-                    advanced={advanced}
-                  />
-                </span>
-              )}
-            </SortableRow>
-          ))}
-        </DndReorder>
+          renderItem={(_id, i, handle) => (
+            <span className="inline-flex items-center gap-0.5">
+              {handle}
+              <NodeChip
+                node={node.children[i]}
+                parentId={node.id}
+                index={i}
+                siblingCount={node.children.length}
+                advanced={advanced}
+              />
+            </span>
+          )}
+        />
       </span>
       <button
         onClick={() => addChild(node.id!, nodes.literal(''))}
@@ -283,25 +278,20 @@ function ChoiceContainer({ node, advanced }: { node: Extract<RuleNode, { type: '
           const n = findNode(node, id)
           return n ? <OverlayChip node={n} /> : null
         }}
-      >
-        {node.options.map((opt, i) => (
-          <SortableRow key={opt.id} id={opt.id!}>
-            {({ handle }) => (
-              <span className="inline-flex items-center gap-0.5">
-                {i > 0 && <span className="mr-0.5 text-xs font-semibold text-brand/70">or</span>}
-                {handle}
-                <NodeChip
-                  node={opt}
-                  parentId={node.id}
-                  index={i}
-                  siblingCount={node.options.length}
-                  advanced={advanced}
-                />
-              </span>
-            )}
-          </SortableRow>
-        ))}
-      </DndReorder>
+        renderItem={(_id, i, handle) => (
+          <span className="inline-flex items-center gap-0.5">
+            {i > 0 && <span className="mr-0.5 text-xs font-semibold text-brand/70">or</span>}
+            {handle}
+            <NodeChip
+              node={node.options[i]}
+              parentId={node.id}
+              index={i}
+              siblingCount={node.options.length}
+              advanced={advanced}
+            />
+          </span>
+        )}
+      />
       <button
         onClick={() => addChild(node.id!, nodes.literal(''))}
         aria-label="Add option"

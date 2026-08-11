@@ -5,7 +5,7 @@ import { Panel, Popover, usePopover } from '@/ui/primitives'
 import { Redo, Trash, Undo, X } from '@/ui/icons'
 import { AddBlockMenu } from './blocks/AddBlockMenu'
 import { NodeChip } from './blocks/NodeChip'
-import { DndReorder, OverlayChip, SortableRow } from './blocks/Sortable'
+import { DndReorder, OverlayChip } from './blocks/Sortable'
 import { RegexBar } from './RegexBar'
 
 export function RuleBuilder() {
@@ -146,47 +146,42 @@ export function RuleBuilder() {
                 const n = findNode(root, id)
                 return n ? <OverlayChip node={n} /> : null
               }}
-            >
-              {children.map((child, i) => {
-                const id = child.id!
+              renderItem={(id, i, handle) => {
+                const child = children[i]
                 const selected = selectedNodeIds.includes(id)
                 const hovered = hoveredNodeId === id
                 return (
-                  <SortableRow key={child.id} id={id}>
-                    {({ handle }) => (
-                      <span
-                        onClickCapture={(e) => {
-                          if (e.shiftKey || e.metaKey || e.ctrlKey) {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            selectAt(e, i, id)
-                          }
-                        }}
-                        onClick={(e) => {
-                          if (!(e.shiftKey || e.metaKey || e.ctrlKey)) selectAt(e, i, id)
-                        }}
-                        className={`inline-flex items-center gap-0.5 rounded-md px-0.5 transition-shadow ${
-                          selected
-                            ? 'bg-brand-tint/40 ring-2 ring-brand'
-                            : hovered
-                              ? 'ring-1 ring-brand/40'
-                              : ''
-                        }`}
-                      >
-                        {handle}
-                        <NodeChip
-                          node={child}
-                          parentId={root.id}
-                          index={i}
-                          siblingCount={children.length}
-                          advanced={advanced}
-                        />
-                      </span>
-                    )}
-                  </SortableRow>
+                  <span
+                    onClickCapture={(e) => {
+                      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        selectAt(e, i, id)
+                      }
+                    }}
+                    onClick={(e) => {
+                      if (!(e.shiftKey || e.metaKey || e.ctrlKey)) selectAt(e, i, id)
+                    }}
+                    className={`inline-flex items-center gap-0.5 rounded-md px-0.5 transition-shadow ${
+                      selected
+                        ? 'bg-brand-tint/40 ring-2 ring-brand'
+                        : hovered
+                          ? 'ring-1 ring-brand/40'
+                          : ''
+                    }`}
+                  >
+                    {handle}
+                    <NodeChip
+                      node={child}
+                      parentId={root.id}
+                      index={i}
+                      siblingCount={children.length}
+                      advanced={advanced}
+                    />
+                  </span>
                 )
-              })}
-            </DndReorder>
+              }}
+            />
             <AddBlockMenu onAdd={onAdd} advanced={advanced} compact />
           </div>
         )}

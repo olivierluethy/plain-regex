@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -15,7 +16,6 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import type { RuleNode } from '@/core'
 import { Grip } from '@/ui/icons'
 import { chipLabel } from './labels'
@@ -29,31 +29,52 @@ export function OverlayChip({ node }: { node: RuleNode }) {
   )
 }
 
+/** The vertical bar showing exactly where a dragged block will land. */
+function InsertionLine() {
+  return (
+    <span
+      aria-hidden
+      className="mx-0.5 inline-block h-7 w-[3px] shrink-0 rounded-full bg-brand motion-safe:animate-fade-in"
+    />
+  )
+}
+
 /**
- * Wrap a row of reorderable chips. Reordering is scoped to this context, so
- * a group's blocks reorder within the group and the top-level sequence reorders
- * on its own — chips never jump out of their container.
+ * Reorderable row of chips with an explicit insertion indicator. The list stays
+ * still while dragging (a dimmed source placeholder + a floating overlay + a
+ * brand insertion bar), so it's always clear where the block will drop.
+ * Reordering is scoped to this context — chips never leave their container.
  */
 export function DndReorder({
   ids,
   onReorder,
+  renderItem,
   renderOverlay,
-  children,
 }: {
   ids: string[]
   onReorder: (from: number, to: number) => void
+  renderItem: (id: string, index: number, handle: ReactNode, isDragging: boolean) => ReactNode
   renderOverlay?: (id: string) => ReactNode
-  children: ReactNode
 }) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
   const sensors = useSensors(
-    // A small drag threshold keeps clicks (opening popovers) working.
+    // A small drag threshold keeps clicks (open editor, select) working.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const onDragEnd = (e: DragEndEvent) => {
+  const reset = () => {
     setActiveId(null)
+    setOverIndex(null)
+  }
+
+  const onDragOver = (e: DragOverEvent) => {
+    setOverIndex(e.over ? ids.indexOf(String(e.over.id)) : null)
+  }
+
+  const onDragEnd = (e: DragEndEvent) => {
+    reset()
     const { active, over } = e
     if (!over || active.id === over.id) return
     const from = ids.indexOf(String(active.id))
@@ -61,16 +82,33 @@ export function DndReorder({
     if (from >= 0 && to >= 0) onReorder(from, to)
   }
 
+  const activeIndex = activeId ? ids.indexOf(activeId) : -1
+  const insertionIndex =
+    activeIndex >= 0 && overIndex != null
+      ? activeIndex < overIndex
+        ? overIndex + 1
+        : overIndex
+      : null
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={(e) => setActiveId(String(e.active.id))}
+      onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setActiveId(null)}
+      onDragCancel={reset}
     >
       <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
-        {children}
+        {ids.map((id, i) => (
+          <Fragment key={id}>
+            {insertionIndex === i && <InsertionLine />}
+            <SortableRow id={id}>
+              {({ handle, isDragging }) => renderItem(id, i, handle, isDragging)}
+            </SortableRow>
+          </Fragment>
+        ))}
+        {insertionIndex === ids.length && <InsertionLine />}
       </SortableContext>
       <DragOverlay dropAnimation={null}>
         {activeId && renderOverlay ? (
@@ -83,16 +121,19 @@ export function DndReorder({
   )
 }
 
-/** A single sortable slot. Gives the child a drag handle and its dragging state. */
-export function SortableRow({
+/**
+ * A single sortable slot. The list stays static during a drag (no transforms),
+ * so the insertion bar is the single source of truth for the drop position;
+ * the source just dims in place.
+ */
+function SortableRow({
   id,
   children,
 }: {
   id: string
   children: (p: { handle: ReactNode; isDragging: boolean }) => ReactNode
 }) {
-  const { setNodeRef, transform, transition, attributes, listeners, isDragging } = useSortable({ id })
-  const style = { transform: CSS.Translate.toString(transform), transition }
+  const { setNodeRef, transition, attributes, listeners, isDragging } = useSortable({ id })
 
   const handle = (
     <button
@@ -109,8 +150,8 @@ export function SortableRow({
   return (
     <span
       ref={setNodeRef}
-      style={style}
-      className={`group/slot inline-flex items-center rounded-md ${isDragging ? 'opacity-40' : ''}`}
+      style={{ transition }}
+      className={`group/slot inline-flex items-center rounded-md ${isDragging ? 'opacity-30' : ''}`}
     >
       {children({ handle, isDragging })}
     </span>
