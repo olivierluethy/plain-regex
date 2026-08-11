@@ -5,6 +5,7 @@ import {
   cloneWithNewIds,
   DEFAULT_FLAGS,
   emptyRuleAst,
+  findNode,
   insertChild,
   moveChild,
   newId,
@@ -20,6 +21,7 @@ import type {
   AiProvider,
   AiSettings,
   ExperienceLevel,
+  Mark,
   Rule,
   Snapshot,
   TestMode,
@@ -56,11 +58,19 @@ function starterRule(): Rule {
     ast,
     flags,
     testInput: 'alice@example.com\nbob.smith@mail.co.uk\nnot an email\n@missing.local\nhi@site',
+    sampleValue: 'alice@example.com',
+    marks: [],
     history: [snap],
     historyIndex: 0,
     createdAt: ts,
     updatedAt: ts,
   }
+}
+
+/** Turn a gap between two marked spans into a sensible connector block. */
+function makeConnector(gapText: string): RuleNode {
+  if (/^\s+$/.test(gapText)) return nodes.repeat(nodes.charType('whitespace'), 'oneOrMore')
+  return nodes.literal(gapText)
 }
 
 function freshRule(name: string): Rule {
@@ -73,6 +83,8 @@ function freshRule(name: string): Rule {
     ast,
     flags,
     testInput: '',
+    sampleValue: '',
+    marks: [],
     history: [makeSnapshot(ast, flags, 'Created the rule')],
     historyIndex: 0,
     createdAt: ts,
@@ -114,6 +126,15 @@ interface StoreState {
   // flags & test input
   setFlag: (flag: keyof RegexFlags, value: boolean) => void
   setTestInput: (text: string) => void
+
+  // build-from-example
+  setSampleValue: (text: string) => void
+  addFromSelection: (payload: {
+    start: number
+    end: number
+    node: RuleNode
+    label: string
+  }) => void
 
   // history
   undo: () => void
@@ -222,6 +243,7 @@ export const useStore = create<StoreState>()(
               id: newId(),
               name: `${src.name} copy`,
               ast,
+              marks: [], // node ids changed on clone, so the old marks no longer map
               history: [makeSnapshot(ast, src.flags, 'Created the rule')],
               historyIndex: 0,
               createdAt: ts,
@@ -250,6 +272,8 @@ export const useStore = create<StoreState>()(
               ast,
               flags,
               testInput: '',
+              sampleValue: '',
+              marks: [],
               history: [makeSnapshot(ast, flags, 'Imported the rule')],
               historyIndex: 0,
               createdAt: ts,
@@ -298,7 +322,13 @@ export const useStore = create<StoreState>()(
         loadAst: (input, label) => {
           try {
             const ast = normalizeAst(input)
-            mutateAst(() => ast, { force: true, label })
+            set((s) => {
+              const rule = s.rules.find((r) => r.id === s.activeRuleId)
+              if (!rule) return s
+              const next = commit(rule, ast, rule.flags, { force: true, label })
+              // A wholesale new AST invalidates the old sample marks.
+              return { rules: replaceActive(s.rules, rule.id, () => ({ ...next, marks: [] })) }
+            })
             return { ok: true }
           } catch (e) {
             return { ok: false, error: e instanceof Error ? e.message : 'Invalid rule.' }
@@ -321,6 +351,52 @@ export const useStore = create<StoreState>()(
           set((s) => ({
             rules: replaceActive(s.rules, s.activeRuleId, (r) => ({ ...r, testInput: text })),
           })),
+
+        setSampleValue: (text) =>
+          set((s) => ({
+            // Changing the sample invalidates the old spans → clear marks.
+            rules: replaceActive(s.rules, s.activeRuleId, (r) => ({
+              ...r,
+              sampleValue: text,
+              marks: [],
+            })),
+          })),
+
+        addFromSelection: ({ start, end, node, label }) =>
+          set((s) => {
+            const rule = s.rules.find((r) => r.id === s.activeRuleId)
+            if (!rule) return s
+            const rootId = rule.ast.id!
+            // Keep only marks whose block still exists.
+            const valid = rule.marks.filter((m) => findNode(rule.ast, m.nodeId))
+            const newMarks: Mark[] = []
+            let ast: SequenceNode = rule.ast
+
+            // When appending after everything marked, fill the gap with a connector.
+            if (valid.length > 0) {
+              const lastEnd = Math.max(...valid.map((m) => m.end))
+              if (start >= lastEnd && start > lastEnd) {
+                const gap = rule.sampleValue.slice(lastEnd, start)
+                if (gap.length) {
+                  const connector = makeConnector(gap)
+                  ast = insertChild(ast, rootId, connector) as SequenceNode
+                  newMarks.push({ start: lastEnd, end: start, nodeId: connector.id! })
+                }
+              }
+            }
+
+            ast = insertChild(ast, rootId, node) as SequenceNode
+            newMarks.push({ start, end, nodeId: node.id! })
+
+            const next = commit(rule, ast, rule.flags, { force: true, label })
+            return {
+              rules: replaceActive(s.rules, rule.id, () => ({
+                ...next,
+                marks: [...valid, ...newMarks],
+              })),
+              selectedNodeId: node.id ?? null,
+            }
+          }),
 
         undo: () =>
           set((s) => {
@@ -379,7 +455,21 @@ export const useStore = create<StoreState>()(
     },
     {
       name: 'plainregex.v1',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const st = persisted as { rules?: Rule[] } | undefined
+        if (version < 2 && st && Array.isArray(st.rules)) {
+          st.rules = st.rules.map((r) => ({
+            ...r,
+            sampleValue:
+              typeof (r as Rule).sampleValue === 'string'
+                ? (r as Rule).sampleValue
+                : (r.testInput?.split('\n')[0] ?? ''),
+            marks: Array.isArray((r as Rule).marks) ? (r as Rule).marks : [],
+          }))
+        }
+        return st as unknown
+      },
       partialize: (s) => ({
         rules: s.rules,
         activeRuleId: s.activeRuleId,

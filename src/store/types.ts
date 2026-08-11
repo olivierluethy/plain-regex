@@ -8,12 +8,23 @@ export interface Snapshot {
   flags: RegexFlags
 }
 
+/** Maps a marked span in the sample value to the block it produced. */
+export interface Mark {
+  start: number
+  end: number
+  nodeId: string
+}
+
 export interface Rule {
   id: string
   name: string
   ast: SequenceNode
   flags: RegexFlags
   testInput: string
+  /** The single sample value shown in "Build from example". */
+  sampleValue: string
+  /** Spans of `sampleValue` already turned into blocks. */
+  marks: Mark[]
   history: Snapshot[]
   historyIndex: number
   createdAt: number
