@@ -28,15 +28,15 @@ export function Panel({
   return (
     <section className={`panel flex flex-col ${className}`}>
       {(title || actions || eyebrow) && (
-        <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="min-w-0">
-            {eyebrow && <div className="eyebrow mb-1">{eyebrow}</div>}
+            {eyebrow && <div className="eyebrow mb-0.5">{eyebrow}</div>}
             {title && <h2 className="text-h2 text-ink">{title}</h2>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
         </header>
       )}
-      <div className={`px-5 py-4 ${bodyClass}`}>{children}</div>
+      <div className={`px-4 py-3 ${bodyClass}`}>{children}</div>
     </section>
   )
 }

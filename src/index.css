@@ -65,8 +65,8 @@
     background-color: rgb(var(--bg));
     color: rgb(var(--ink));
     font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 0.9375rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -100,9 +100,9 @@
       transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50
       select-none;
   }
-  .btn-md { @apply h-[38px] px-3.5; }
-  .btn-sm { @apply h-8 px-3 text-[0.8125rem]; }
-  .btn-lg { @apply h-11 px-5; }
+  .btn-md { @apply h-[34px] px-3; }
+  .btn-sm { @apply h-7 px-2.5 text-[0.8125rem]; }
+  .btn-lg { @apply h-10 px-4; }
   .btn-primary {
     @apply btn bg-brand text-white shadow-sm hover:bg-brand-strong active:translate-y-px;
   }
@@ -118,14 +118,14 @@
   }
 
   .input {
-    @apply w-full rounded-sm border border-border bg-surface px-3 py-2 text-ink
+    @apply w-full rounded-sm border border-border bg-surface px-2.5 py-1.5 text-ink
       placeholder:text-ink-faint transition-shadow duration-150
       focus:border-brand focus:shadow-focus;
   }
 
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-md border border-brand/25 bg-brand-tint
-      px-2.5 py-1 text-sm font-medium text-brand transition-colors duration-150;
+      px-2 py-0.5 text-sm font-medium text-brand transition-colors duration-150;
   }
 }
 

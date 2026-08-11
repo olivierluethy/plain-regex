@@ -30,13 +30,16 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       fontSize: {
-        display: ['2.5rem', { lineHeight: '1.1', fontWeight: '700' }],
-        h1: ['1.75rem', { lineHeight: '1.2', fontWeight: '600' }],
-        h2: ['1.25rem', { lineHeight: '1.3', fontWeight: '600' }],
-        h3: ['1.0625rem', { lineHeight: '1.4', fontWeight: '600' }],
-        label: ['0.8125rem', { lineHeight: '1.4', fontWeight: '600', letterSpacing: '0.08em' }],
-        mono: ['0.9375rem', { lineHeight: '1.5' }],
-        'mono-sm': ['0.8125rem', { lineHeight: '1.5' }],
+        // Denser v2 ramp — see docs/STYLEGUIDE.md §3.
+        display: ['2rem', { lineHeight: '1.1', fontWeight: '700' }],
+        h1: ['1.375rem', { lineHeight: '1.2', fontWeight: '600' }],
+        h2: ['1.0625rem', { lineHeight: '1.25', fontWeight: '600' }],
+        h3: ['0.9375rem', { lineHeight: '1.35', fontWeight: '600' }],
+        body: ['0.9375rem', { lineHeight: '1.5' }],
+        'body-sm': ['0.8125rem', { lineHeight: '1.45' }],
+        label: ['0.6875rem', { lineHeight: '1.3', fontWeight: '600', letterSpacing: '0.08em' }],
+        mono: ['0.875rem', { lineHeight: '1.5' }],
+        'mono-sm': ['0.78rem', { lineHeight: '1.5' }],
       },
       borderRadius: {
         sm: '6px',
