@@ -2,11 +2,17 @@
 // buildRegExp(ast, flags) — assemble the full pattern and construct a RegExp.
 
 import { escapeClass, escapeLiteral } from './escape'
-import type { RegexFlags, RuleNode } from './types'
+import type { RegexFlags, RuleNode, StripNode } from './types'
 import { flagsToString } from './types'
 
 // ASCII punctuation, expressed as class ranges: ! " # $ … ~ (minus letters/digits/space).
 const PUNCT_CLASS = '!-\\/:-@\\[-`{-~'
+
+/** Stable, unique named-capture-group name for a strip node (for cleaned output). */
+export function stripGroupName(node: StripNode): string {
+  const id = (node.id ?? 'x').replace(/[^a-zA-Z0-9]/g, '')
+  return `strip${id}`
+}
 
 function charTypeFragment(kind: string, negated: boolean): string {
   switch (kind) {
@@ -43,6 +49,7 @@ function isAtom(node: RuleNode): boolean {
     case 'capture':
     case 'choice':
     case 'contains':
+    case 'forbid':
       return true
     case 'anchor':
       return true
@@ -54,8 +61,8 @@ function isAtom(node: RuleNode): boolean {
 }
 
 /** Compile a node and wrap it in a non-capturing group if a quantifier needs it. */
-function atomize(node: RuleNode): string {
-  const frag = compile(node)
+function atomize(node: RuleNode, captureStrips: boolean): string {
+  const frag = compileNode(node, captureStrips)
   return isAtom(node) ? frag : `(?:${frag})`
 }
 
@@ -69,7 +76,12 @@ function quantifier(min: number, max: number | null): string {
   return `{${min},${max}}`
 }
 
-export function compile(node: RuleNode): string {
+/**
+ * Compile a node. When `captureStrips` is true, strip nodes become NAMED capture
+ * groups so cleaned-output logic can locate and remove them; the default (false)
+ * keeps them non-capturing so the main pattern's group numbering stays clean.
+ */
+function compileNode(node: RuleNode, captureStrips: boolean): string {
   switch (node.type) {
     case 'literal':
       return escapeLiteral(node.text)
@@ -84,20 +96,20 @@ export function compile(node: RuleNode): string {
       return node.chars.length ? `[^${escapeClass(node.chars)}]` : ''
 
     case 'sequence':
-      return node.children.map(compile).join('')
+      return node.children.map((c) => compileNode(c, captureStrips)).join('')
 
     case 'choice': {
-      const opts = node.options.filter(Boolean).map(compile)
+      const opts = node.options.filter(Boolean).map((o) => compileNode(o, captureStrips))
       if (opts.length === 0) return ''
       if (opts.length === 1) return opts[0]
       return `(?:${opts.join('|')})`
     }
 
     case 'repeat':
-      return atomize(node.child) + quantifier(node.min, node.max)
+      return atomize(node.child, captureStrips) + quantifier(node.min, node.max)
 
     case 'group': {
-      const inner = node.children.map(compile).join('')
+      const inner = node.children.map((c) => compileNode(c, captureStrips)).join('')
       if (node.capture) {
         return node.name ? `(?<${node.name}>${inner})` : `(${inner})`
       }
@@ -109,18 +121,39 @@ export function compile(node: RuleNode): string {
 
     case 'contains':
       // Non-consuming "must contain X somewhere ahead".
-      return `(?=[\\s\\S]*${compile(node.child)})`
+      return `(?=[\\s\\S]*${compileNode(node.child, captureStrips)})`
+
+    case 'forbid':
+      // Negative lookahead: the child must NOT appear here / anywhere ahead.
+      return node.scope === 'anywhere'
+        ? `(?![\\s\\S]*${compileNode(node.child, captureStrips)})`
+        : `(?!${compileNode(node.child, captureStrips)})`
 
     case 'capture':
-      return node.name ? `(?<${node.name}>${compile(node.child)})` : `(${compile(node.child)})`
+      return node.name
+        ? `(?<${node.name}>${compileNode(node.child, captureStrips)})`
+        : `(${compileNode(node.child, captureStrips)})`
 
-    case 'strip':
-      // Still matched (so surrounding anchors line up) but non-capturing.
-      return `(?:${compile(node.child)})`
+    case 'strip': {
+      const inner = compileNode(node.child, captureStrips)
+      // Still matched so surrounding anchors line up. Non-capturing by default;
+      // named-capturing when we need to locate it for cleaned output.
+      return captureStrips ? `(?<${stripGroupName(node)}>${inner})` : `(?:${inner})`
+    }
 
     default:
       return ''
   }
+}
+
+/** Compile a node into a regex fragment (strips stay non-capturing). */
+export function compile(node: RuleNode): string {
+  return compileNode(node, false)
+}
+
+/** Compile with strip nodes as named capture groups (for cleaned-output logic). */
+export function compileClean(node: RuleNode): string {
+  return compileNode(node, true)
 }
 
 export interface CompileResult {

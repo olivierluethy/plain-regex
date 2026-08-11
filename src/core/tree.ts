@@ -16,7 +16,8 @@ function hasChildSlot(node: RuleNode): boolean {
     node.type === 'repeat' ||
     node.type === 'contains' ||
     node.type === 'capture' ||
-    node.type === 'strip'
+    node.type === 'strip' ||
+    node.type === 'forbid'
   )
 }
 

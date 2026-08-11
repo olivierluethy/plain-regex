@@ -104,6 +104,16 @@ export interface StripNode extends BaseNode {
   child: RuleNode
 }
 
+/**
+ * A forbidden pattern — the value must NOT contain the child here (scope: 'here')
+ * or anywhere ahead (scope: 'anywhere'). Compiled as a negative lookahead.
+ */
+export interface ForbidNode extends BaseNode {
+  type: 'forbid'
+  child: RuleNode
+  scope: 'here' | 'anywhere'
+}
+
 export type RuleNode =
   | LiteralNode
   | CharTypeNode
@@ -117,6 +127,7 @@ export type RuleNode =
   | ContainsNode
   | CaptureNode
   | StripNode
+  | ForbidNode
 
 export type RuleNodeType = RuleNode['type']
 

@@ -7,6 +7,7 @@ import type {
   CharTypeKind,
   ChoiceNode,
   ContainsNode,
+  ForbidNode,
   GroupNode,
   RepeatNode,
   RepeatPreset,
@@ -84,6 +85,12 @@ export const nodes = {
     name,
   }),
   strip: (child: RuleNode): RuleNode => ({ id: newId(), type: 'strip', child }),
+  forbid: (child: RuleNode, scope: 'here' | 'anywhere' = 'here'): ForbidNode => ({
+    id: newId(),
+    type: 'forbid',
+    child,
+    scope,
+  }),
 }
 
 export function emptyRuleAst(): SequenceNode {
@@ -179,6 +186,12 @@ export function normalizeNode(input: unknown): RuleNode {
 
     case 'strip':
       return nodes.strip(normalizeNode(raw.child))
+
+    case 'forbid':
+      return nodes.forbid(
+        normalizeNode(raw.child),
+        raw.scope === 'anywhere' ? 'anywhere' : 'here',
+      )
 
     default:
       throw new AstError(`Unknown block type "${String(type)}".`)
