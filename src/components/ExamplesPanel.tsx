@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { generateExamples } from '@/core'
+import { cleanValue, generateExamples, hasStrips } from '@/core'
 import { useStore } from '@/store/useStore'
 import { Panel } from '@/ui/primitives'
-import { Check, X } from '@/ui/icons'
+import { Check, Scissors, X } from '@/ui/icons'
 
 function ExampleValue({ value }: { value: string }) {
   if (value === '') return <span className="italic text-ink-faint">(empty)</span>
@@ -15,6 +15,15 @@ export function ExamplesPanel() {
     () => generateExamples(rule.ast, rule.flags, 5),
     [rule.ast, rule.flags],
   )
+
+  const cleanedDemo = useMemo(() => {
+    if (!hasStrips(rule.ast)) return null
+    for (const p of positives) {
+      const c = cleanValue(rule.ast, rule.flags, p)
+      if (c && c.matched && c.removed.length) return { value: p, cleaned: c.cleaned }
+    }
+    return null
+  }, [rule.ast, rule.flags, positives])
 
   return (
     <Panel eyebrow="See it" title="Examples, generated for you">
@@ -47,7 +56,7 @@ export function ExamplesPanel() {
             <span className="grid h-5 w-5 place-items-center rounded bg-fail/15 text-fail">
               <X width={13} height={13} />
             </span>
-            <h3 className="text-h3 text-ink">These would not</h3>
+            <h3 className="text-h3 text-ink">These would be rejected</h3>
           </div>
           {negatives.length ? (
             <ul className="flex flex-col gap-1.5">
@@ -62,11 +71,27 @@ export function ExamplesPanel() {
             </ul>
           ) : (
             <p className="text-body-sm text-ink-muted">
-              This rule is broad — almost anything matches it.
+              This rule is broad — almost anything is allowed.
             </p>
           )}
         </div>
       </div>
+
+      {cleanedDemo && (
+        <div className="mt-4 rounded-lg border border-border bg-surface-2/50 p-3">
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="grid h-5 w-5 place-items-center rounded bg-fail/15 text-fail">
+              <Scissors width={13} height={13} />
+            </span>
+            <span className="eyebrow">Cleaned result</span>
+          </div>
+          <p className="text-body-sm text-ink-muted">
+            With the strip rule, <code className="font-mono text-ink">{cleanedDemo.value}</code>{' '}
+            becomes{' '}
+            <code className="break-all font-mono text-pass">{cleanedDemo.cleaned || '(empty)'}</code>.
+          </p>
+        </div>
+      )}
     </Panel>
   )
 }
