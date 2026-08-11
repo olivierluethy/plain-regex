@@ -3,6 +3,13 @@
 The single source of truth for the visual system. Every feature must look like it was
 always part of the product. Colours and typography defined here do not change.
 
+> **Density revision (v2).** The palette, dark theme, brand identity and component
+> language below are unchanged. What changed in this revision is **scale**: a tighter
+> type ramp, smaller controls, reduced section padding, a **full-width** app layout that
+> spends the old left/right gutters, and an **inner-scroll panel** pattern so long result
+> lists scroll inside their panel instead of growing the page. Sections 3, 4, 5, 8 and the
+> new section 14 carry the denser tokens; they supersede the earlier sizing.
+
 ---
 
 ## 1. Design thesis
@@ -85,29 +92,36 @@ Three roles. Loaded via `@fontsource` (self-contained, offline-friendly).
 | UI/Body | **Inter**        | All interface text, labels, paragraphs. Weights 400/500/600.|
 | Mono    | **JetBrains Mono**| Regex output, tokens, code, URL parts. Weights 400/500/700. |
 
-### Scale (rem, 16px base)
+### Scale (rem, 16px base) — denser v2 ramp
+
+The base body size is **15px** (`0.9375rem`). The ramp is tuned for information density:
+compact enough to fit a full workspace without page-scrolling, still legible and
+accessible. `body`/`body-sm` are now **real tokens** (previously undefined, so those
+classes were no-ops that fell back to 16px) — defining them is what densifies running text.
 
 | Name        | Size / line-height | Weight | Role    | Use                          |
 | ----------- | ------------------ | ------ | ------- | ---------------------------- |
-| `display`   | 2.5 / 1.1          | 700    | Display | Hero wordmark                |
-| `h1`        | 1.75 / 1.2         | 600    | Display | Page/section title           |
-| `h2`        | 1.25 / 1.3         | 600    | Display | Panel title                  |
-| `h3`        | 1.0625 / 1.4       | 600    | Display | Sub-panel                    |
-| `body`      | 1.0 / 1.6          | 400    | Body    | Default text (large-ish)     |
-| `body-sm`   | 0.875 / 1.5        | 400    | Body    | Secondary                    |
-| `label`     | 0.8125 / 1.4       | 600    | Body    | Uppercase eyebrows (tracked) |
-| `mono`      | 0.9375 / 1.5       | 500    | Mono    | Regex & tokens               |
-| `mono-sm`   | 0.8125 / 1.5       | 500    | Mono    | Inline tokens                |
+| `display`   | 2.0 / 1.1          | 700    | Display | Hero wordmark                |
+| `h1`        | 1.375 / 1.2        | 600    | Display | Page/section title           |
+| `h2`        | 1.0625 / 1.25      | 600    | Display | Panel title                  |
+| `h3`        | 0.9375 / 1.35      | 600    | Display | Sub-panel                    |
+| `body`      | 0.9375 / 1.5       | 400    | Body    | Default text                 |
+| `body-sm`   | 0.8125 / 1.45      | 400    | Body    | Secondary                    |
+| `label`     | 0.6875 / 1.3       | 600    | Body    | Uppercase eyebrows (tracked) |
+| `mono`      | 0.875 / 1.5        | 500    | Mono    | Regex & tokens               |
+| `mono-sm`   | 0.78 / 1.5         | 500    | Mono    | Inline tokens                |
 
 Eyebrow labels: `letter-spacing: 0.08em`, `text-transform: uppercase`, `--ink-muted`.
-Body text is intentionally generous (16px+) — this is an accessibility-first tool.
+On phones (`sm` and below) headings step down one rung (e.g. panel titles read as `h3`).
 
 ---
 
 ## 4. Spacing, radius, shadow
 
-**Spacing scale** (Tailwind default 4px step). Panels breathe: section gaps `24–32px`,
-card padding `20–24px`, control gaps `8–12px`.
+**Spacing scale** (Tailwind default 4px step) — denser v2. Panels are tight but not
+cramped: **section/column gaps `16px`** (`12px` on mobile), **panel padding `12–16px`**
+(`px-4 py-3`), control gaps `6–8px`. The old `20–32px` rhythm is retired — it wasted
+vertical space and forced page-scrolling.
 
 **Radius**
 
@@ -146,7 +160,8 @@ left, optional controls right, then content. Optional eyebrow label above title.
 - Secondary: `--surface` fill, `1px --border-strong`, `--ink` text; hover `--surface-2`.
 - Ghost: transparent, `--ink-muted` text; hover `--surface-2`.
 - Danger-ghost: `--fail` text on hover fill `--fail-tint`.
-- Sizes: sm (h 32), md (h 38), lg (h 44). Icon buttons square.
+- Sizes (denser v2): sm (h 28), md (h 34), lg (h 40). Icon buttons square. Inputs use
+  `py-1.5`. Touch targets on mobile stay ≥ 40px via full-width buttons (see §8).
 
 **Toggle / Segmented control.** Pill track `--surface-2`, active segment `--surface` with
 `shadow-sm` and `--ink`. Used for Simple/Advanced and per-line/whole-text modes.
@@ -192,16 +207,29 @@ vertical rail (`--border-strong`). Selected snapshots for diff get a `--brand` r
 
 ---
 
-## 8. Layout
+## 8. Layout — full-width v2
 
-- **Workspace:** max-width `1400px`, centred, `24px` gutters (`16px` on mobile).
-- **Desktop (≥1024px):** two-column workspace — builder + explanation on the left, test + examples
-  on the right — under a full-width header. URL mode spans full width above the columns when active.
-- **Tablet/mobile:** single column, panels stack in priority order: builder → explanation → test →
-  examples → timeline. Chips wrap; segmented controls stay reachable.
+- **Workspace:** near-full-width, `max-width 1720px`, centred, `24px` gutters (`16px` on
+  mobile). The old `1400px` cap left wide empty gutters on desktop — retired.
+- **Desktop columns:**
+  - `≥1536px` (2xl): **three columns.** Col 1 build + explanation; col 2 build-from-example,
+    test corpus, quick check; col 3 examples + code export. This is what spends the reclaimed
+    gutters — each panel is comfortably wide, nothing is stretched.
+  - `1024–1535px` (lg/xl): **two columns** (build/explanation/examples · sample/test/quick/code).
+  - `<1024px`: **single column**, panels stack in priority order.
+- **Full-width strips:** URL mode, AI assist and **Paste-a-regex import** span the full width
+  above the columns when open, so a whole-app action reads as global.
 - **Header:** wordmark left; Simple/Advanced toggle, theme toggle, rules menu, settings right.
-- Touch targets ≥ 40px. Content never exceeds viewport width; wide regex/code scrolls inside its own
-  `overflow-x:auto` container.
+- Content never exceeds viewport width; wide regex/code scrolls inside its own
+  `overflow-x:auto` container. Long lists scroll **inside their panel** (see §14).
+
+### Mobile density (`sm` and below)
+
+Concrete rules applied at `sm` and below, logic unchanged: reduce section vertical padding
+(`py-3`), scale decorative icons down (`h-16` → `h-12`), step headings down one rung
+(`h2` → `h3`), body drops to `body-sm`, tighten grid/flex gaps (`gap-4` → `gap-3`), and make
+primary buttons `w-full` for thumb reach (`w-auto` from `sm:` up). Keep the layout functional,
+never stretched.
 
 ---
 
@@ -380,3 +408,39 @@ Mobile: the drawer becomes full-width.
 
 **Voice:** "Clear all", "Delete", "Restore", "Step through the pattern". History empty state reassures
 it is automatic: "Saved automatically as you edit."
+
+---
+
+## 14. Inner-scroll panels, regex import & the match breakdown (v2)
+
+Extends the system for the density revision. **Reuses existing tokens.**
+
+**Inner-scroll panel.** A panel whose body can grow unbounded (Test corpus results, Examples
+columns, Code snippet, the rules list) caps its scrolling region with `max-height` + `overflow-y:auto`
+and the existing `.scroll-thin` thumb, so the panel header and the page stay put. Only the *long*
+region scrolls — inputs, toggles and summaries above it remain visible. Caps sit around `44–52vh`
+so several panels coexist on one screen. The scroll region always paints an explicit token bg.
+
+**Raw-regex block (import escape hatch).** A construct with no friendly equivalent survives as a
+**raw block**: a `mono-sm` chip on `--surface-2` with a `1px --border-strong` (dashed) edge and a
+small `‹ ›`/`.*` glyph in `--ink-faint`, so it reads as "verbatim pattern", visibly distinct from the
+indigo meaning-chips. It round-trips and compiles unchanged; its popover holds the raw source in a
+mono input and a one-line best-effort note. Never green/red — it carries no pass/fail meaning.
+
+**Paste-a-regex import.** A full-width strip (same shell as URL mode) with: a mono input accepting a
+`/pattern/flags` literal or a bare pattern; **Replace** (primary) and **Append** (secondary) actions;
+and, on bad input, one calm `--fail`-tinted line naming the problem ("That isn't a valid regex —
+unbalanced `(`."). On success it rebuilds blocks, the REGEX bar, explanation, examples, tests and
+Quick check, and logs a History snapshot "Imported a regex". A short hint sits under the title
+("Paste a regex you found — we'll turn it into editable blocks.").
+
+**Match breakdown (deeper "Why?").** A passing value's reason is no longer one generic sentence. It
+is a **part-by-part list**, in pattern order, each row: a `mono-sm` chip of the exact characters that
+matched (`--pass-tint` bg, `--pass` text) — or a zero-width marker "✓ start of text" for anchors /
+"must contain" / "not allowed" — followed by the plain-English rule that governed it (`body-sm`). Each
+row is hover-linked to its block via the shared `hoveredNodeId` (same two-way highlight as §12), so
+hovering a row lights the block, the REGEX segment and the character span together. A one-line summary
+sits above ("Allowed — all N parts matched, in order."). No-match keeps the first-failing-condition
+detail from §12. **Trivial/empty rules read sensibly** — an empty rule says "This rule is empty, so it
+accepts any value," never "matches every part"; an all-empty choice says "an empty choice — fill in the
+options," never "either nothing or nothing."
