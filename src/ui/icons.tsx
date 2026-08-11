@@ -132,3 +132,26 @@ export const Wand = (p: IconProps) => (
     <path d="M3 21l12-12 2 2L5 23z" />
   </svg>
 )
+export const Grip = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <circle cx="9" cy="6" r="1.4" />
+    <circle cx="15" cy="6" r="1.4" />
+    <circle cx="9" cy="12" r="1.4" />
+    <circle cx="15" cy="12" r="1.4" />
+    <circle cx="9" cy="18" r="1.4" />
+    <circle cx="15" cy="18" r="1.4" />
+  </svg>
+)
+export const Scissors = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="6" cy="6" r="3" />
+    <circle cx="6" cy="18" r="3" />
+    <path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" />
+  </svg>
+)
+export const Ban = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M5.6 5.6l12.8 12.8" />
+  </svg>
+)
