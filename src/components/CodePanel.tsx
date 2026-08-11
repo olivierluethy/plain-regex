@@ -7,7 +7,7 @@ import { useCopy } from '@/ui/useCopy'
 import { generate, LANGUAGES, type Mode } from '@/lib/codegen'
 import { highlight } from '@/lib/prism'
 
-export function CodePanel() {
+export function CodePanel({ className = '' }: { className?: string }) {
   const rule = useStore((s) => s.active())
   const [lang, setLang] = useState('javascript')
   const [copiedCode, copyCode] = useCopy()
@@ -38,6 +38,7 @@ export function CodePanel() {
     <Panel
       eyebrow="Use it in your code"
       title="Copy-ready snippets"
+      className={className}
       actions={
         <button
           className="btn-secondary btn-sm"
@@ -113,7 +114,7 @@ export function CodePanel() {
             {copiedCode ? <Check width={14} height={14} /> : <Copy width={14} height={14} />}
             {copiedCode ? 'Copied' : 'Copy code'}
           </button>
-          <pre className="code-block overflow-x-auto scroll-thin rounded-lg border border-border bg-surface-2 p-4 text-mono-sm leading-[1.6]">
+          <pre className="code-block max-h-[46vh] overflow-auto scroll-thin rounded-lg border border-border bg-surface-2 p-4 text-mono-sm leading-[1.6]">
             <code
               className={snippet.prism ? `language-${snippet.prism}` : undefined}
               dangerouslySetInnerHTML={{ __html: html }}

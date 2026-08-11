@@ -10,7 +10,7 @@ function ExampleValue({ value }: { value: string }) {
   return <code className="break-all font-mono text-mono-sm">{value}</code>
 }
 
-export function ExamplesPanel() {
+export function ExamplesPanel({ className = '' }: { className?: string }) {
   const rule = useStore((s) => s.active())
   const { positives, negatives } = useMemo(
     () => generateExamples(rule.ast, rule.flags, 5),
@@ -31,7 +31,7 @@ export function ExamplesPanel() {
   }, [rule.ast, rule.flags, positives])
 
   return (
-    <Panel eyebrow="See it" title="Examples, generated for you">
+    <Panel eyebrow="See it" title="Examples, generated for you" className={className}>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <div className="mb-2 flex items-center gap-2">

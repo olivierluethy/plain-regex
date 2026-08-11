@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useTheme } from '@/ui/useTheme'
-import { Clock, Link, Sparkles } from '@/ui/icons'
+import { Clock, Link, Sparkles, Wand } from '@/ui/icons'
 import { Header } from '@/components/Header'
 import { RuleBuilder } from '@/components/RuleBuilder'
 import { ExplanationPanel } from '@/components/ExplanationPanel'
@@ -10,6 +10,7 @@ import { QuickCheck } from '@/components/QuickCheck'
 import { ExamplesPanel } from '@/components/ExamplesPanel'
 import { CodePanel } from '@/components/CodePanel'
 import { UrlMode } from '@/components/UrlMode'
+import { ImportRegex } from '@/components/ImportRegex'
 import { HistoryDrawer } from '@/components/Timeline'
 import { AiAssist } from '@/components/AiAssist'
 import { SettingsModal } from '@/components/SettingsModal'
@@ -46,6 +47,7 @@ export default function App() {
   useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [urlOpen, setUrlOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -53,9 +55,16 @@ export default function App() {
     <div className="min-h-screen bg-bg">
       <Header onOpenSettings={() => setSettingsOpen(true)} />
 
-      <main className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6">
+      <main className="mx-auto max-w-[1720px] px-4 py-4 sm:px-6">
         <FirstRun />
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <ToggleButton
+            active={importOpen}
+            onClick={() => setImportOpen((v) => !v)}
+            icon={<Wand width={16} height={16} />}
+          >
+            Paste a regex
+          </ToggleButton>
           <ToggleButton active={urlOpen} onClick={() => setUrlOpen((v) => !v)} icon={<Link width={16} height={16} />}>
             URL mode
           </ToggleButton>
@@ -71,31 +80,43 @@ export default function App() {
           </ToggleButton>
         </div>
 
+        {importOpen && (
+          <div className="mb-4">
+            <ImportRegex onDone={() => setImportOpen(false)} />
+          </div>
+        )}
+
         {urlOpen && (
-          <div className="mb-5">
+          <div className="mb-4">
             <UrlMode />
           </div>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className="flex flex-col gap-5">
+        {/*
+          Full-width v2 layout: 1 col on phones, 2 cols on lg, 3 cols on 2xl —
+          spending the reclaimed gutters. Panels distributed so each column stays
+          balanced and long lists scroll inside their panel (see styleguide §8/§14).
+        */}
+        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          <div className="flex flex-col gap-4">
             <RuleBuilder />
             {aiOpen && <AiAssist onOpenSettings={() => setSettingsOpen(true)} />}
             <ExplanationPanel />
-            <ExamplesPanel />
+            <ExamplesPanel className="2xl:hidden" />
           </div>
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4">
             <BuildFromExample />
             <TestPanel />
             <QuickCheck />
+            <CodePanel className="2xl:hidden" />
+          </div>
+          <div className="hidden flex-col gap-4 2xl:flex">
+            <ExamplesPanel />
+            <CodePanel />
           </div>
         </div>
 
-        <div className="mt-5">
-          <CodePanel />
-        </div>
-
-        <footer className="mt-10 border-t border-border pt-5 text-center text-body-sm text-ink-muted">
+        <footer className="mt-8 border-t border-border pt-4 text-center text-body-sm text-ink-muted">
           PlainRegex — build patterns from meaning. Everything runs in your browser; nothing is sent
           anywhere unless you turn on AI assist.
         </footer>
