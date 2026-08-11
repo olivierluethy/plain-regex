@@ -13,6 +13,7 @@ import { UrlMode } from '@/components/UrlMode'
 import { Timeline } from '@/components/Timeline'
 import { AiAssist } from '@/components/AiAssist'
 import { SettingsModal } from '@/components/SettingsModal'
+import { FirstRun } from '@/components/FirstRun'
 
 function ToggleButton({
   active,
@@ -53,6 +54,7 @@ export default function App() {
       <Header onOpenSettings={() => setSettingsOpen(true)} />
 
       <main className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6">
+        <FirstRun />
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <ToggleButton active={urlOpen} onClick={() => setUrlOpen((v) => !v)} icon={<Link width={16} height={16} />}>
             URL mode

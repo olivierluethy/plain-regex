@@ -52,6 +52,10 @@ export function QuickCheck() {
 
   return (
     <Panel eyebrow="Quick check" title="Try a single value">
+      <p className="mb-2 flex items-center gap-1.5 text-body-sm text-ink-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Type one value — you’ll see instantly whether it passes and why.
+      </p>
       <input
         className="input font-mono text-mono-sm"
         placeholder={rule.sampleValue || 'Type one value to test it…'}

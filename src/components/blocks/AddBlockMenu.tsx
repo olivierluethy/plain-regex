@@ -32,6 +32,9 @@ export function AddBlockMenu({
       )}
     >
       <div className="max-h-[60vh] overflow-y-auto scroll-thin">
+        <p className="px-2.5 py-1.5 text-body-sm text-ink-muted">
+          Pick a building block. It appears in your rule right away.
+        </p>
         <SectionLabel>Characters</SectionLabel>
         <MenuItem onClick={() => onAdd(nodes.charType('letter'))}>A letter</MenuItem>
         <MenuItem onClick={() => onAdd(nodes.charType('digit'))}>A digit</MenuItem>

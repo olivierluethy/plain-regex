@@ -49,6 +49,11 @@ export function CodePanel() {
         </button>
       }
     >
+      <p className="mb-3 flex items-center gap-1.5 text-body-sm text-ink-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Pick a language, then Copy code — the complete pattern is embedded, nothing to stitch in.
+      </p>
+
       {compiled.error && (
         <p className="mb-3 rounded-md border border-fail/30 bg-fail-tint px-3 py-2 text-body-sm text-fail">
           The rule isn’t valid yet ({compiled.error}) — the snippet below won’t run until it compiles.
