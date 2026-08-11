@@ -257,3 +257,40 @@ in `--ink`. Copy button reuses the existing ghost `Copy` control.
   "Allow anything here", "Make this optional", "Must contain this", "Strip this out", "Forbid this".
 - Rejected reasons are specific and blame the rule, not the user: "Rejected — "!" is not allowed here."
 - Exclusion label: "Cleaned result" with the stripped span called out.
+
+---
+
+## 11. Regex output & code export
+
+Extends the system so the user can get the pattern out. **Reuses existing tokens** — mono for code,
+`--brand` for the active tab, `--warn` for unsupported-target notices, existing copy affordance.
+
+**Regex bar (always visible, both modes).** A single mono row at the top of the BUILD panel body:
+`/pattern/flags` in `mono` size on a `--surface-2` inset (radius `md`, `1px --border`), the `/`…`/`
+delimiters and flags in `--ink-faint`, the pattern body in `--ink`. Wide patterns scroll inside their
+own `overflow-x:auto` container — the row never widens the panel. A ghost **Copy** button (existing
+`Copy`/`Check` swap) sits at the right. On a compile error the row shows the message in `--fail`.
+
+**Code block.** `--surface-2` background (a touch deeper than the page), radius `lg`, `1px --border`,
+`mono-sm`, `1.6` line-height, `16px` padding, `overflow-x:auto` with the thin scrollbar. Syntax colours
+come from Prism classes mapped to our tokens (defined once in `index.css`), so highlighting matches the
+palette in light and dark — never an off-palette Prism theme:
+- comments → `--ink-faint`; keywords/operators → `--brand`; strings/regex → `--pass`;
+  functions/class-names → `--ink` (semibold); numbers/booleans → `--warn`; punctuation → `--ink-muted`.
+
+**Language tabs.** A horizontal, scrollable row of small tab buttons above the code block (same metrics
+as the segmented control). Inactive: `--ink-muted`, hover `--surface-2`. Active: `--ink` with a `2px`
+`--brand` underline (radius `full`) and `--surface` fill. JavaScript is first/default. The tab row
+scrolls horizontally on narrow screens; it never wraps mid-tab.
+
+**Copy affordances.** Two: **Copy code** (primary ghost button on the code block header) and **Copy
+pattern** (secondary, in the panel header) — both use the existing copied-state swap (Copy → Check,
+"Copied" for ~1.4s).
+
+**Inline warning banner.** When the active target can't compile the current pattern (e.g. lookaround on
+Go/RE2) or a flag has no equivalent, show a banner above the code: `--warn` text/icon on a faint
+`--warn`/`--fail`-tinted row (radius `md`, `1px` tinted border). A **blocker** (no valid code) replaces
+the snippet with the banner; a **note** (e.g. a dropped `g` flag) sits above the still-valid snippet.
+
+**Voice:** "Use it in your code". Buttons: "Copy code", "Copy pattern". Warnings name the limitation and
+the fix: "Go's RE2 engine has no lookahead — 'must contain' / 'not allowed' rules can't compile here."
