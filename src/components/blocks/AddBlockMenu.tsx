@@ -50,21 +50,25 @@ export function AddBlockMenu({
 
         <SectionLabel>Rules &amp; position</SectionLabel>
         <MenuItem onClick={() => onAdd(nodes.contains(nodes.literal('')))}>Must contain…</MenuItem>
+        <MenuItem onClick={() => onAdd(nodes.forbid(nodes.literal(''), 'anywhere'))}>
+          Must not contain…
+        </MenuItem>
+        <MenuItem onClick={() => onAdd(nodes.strip(nodes.literal('')))}>Strip this out…</MenuItem>
         <MenuItem onClick={() => onAdd(nodes.anchor('start'))}>Start of text</MenuItem>
         <MenuItem onClick={() => onAdd(nodes.anchor('end'))}>End of text</MenuItem>
 
         {advanced && (
           <>
             <MenuItem onClick={() => onAdd(nodes.anchor('wordBoundary'))}>Word boundary</MenuItem>
+            <MenuItem onClick={() => onAdd(nodes.forbid(nodes.literal(''), 'here'))}>
+              Not allowed here (negative)
+            </MenuItem>
             <SectionLabel>Advanced</SectionLabel>
             <MenuItem onClick={() => onAdd(nodes.group([nodes.literal('')], false))}>
               Group (bundle blocks)
             </MenuItem>
             <MenuItem onClick={() => onAdd(nodes.capture(nodes.literal('')))}>
               Keep this part (capture)
-            </MenuItem>
-            <MenuItem onClick={() => onAdd(nodes.strip(nodes.literal('')))}>
-              Mark to remove (strip)
             </MenuItem>
           </>
         )}

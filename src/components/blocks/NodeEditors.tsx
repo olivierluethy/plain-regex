@@ -211,6 +211,31 @@ export function NodeEditor({ node }: { node: RuleNode }) {
         </p>
       )
 
+    case 'forbid':
+      return (
+        <div>
+          <FieldLabel>Where is it not allowed?</FieldLabel>
+          <div className="flex flex-col gap-1.5">
+            {(['here', 'anywhere'] as const).map((sc) => (
+              <button
+                key={sc}
+                onClick={() => update(node.id!, { scope: sc })}
+                className={`rounded-md border px-2.5 py-1.5 text-left text-sm transition-colors ${
+                  node.scope === sc
+                    ? 'border-fail bg-fail-tint text-fail'
+                    : 'border-border text-ink hover:bg-surface-2'
+                }`}
+              >
+                {sc === 'here' ? 'Not allowed at this position' : 'Not allowed anywhere in the value'}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-body-sm text-ink-muted">
+            A value that has this is rejected. Edit the forbidden block on the canvas.
+          </p>
+        </div>
+      )
+
     default:
       return null
   }
