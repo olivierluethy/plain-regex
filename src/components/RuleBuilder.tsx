@@ -5,6 +5,7 @@ import { Redo, Undo } from '@/ui/icons'
 import { AddBlockMenu } from './blocks/AddBlockMenu'
 import { NodeChip } from './blocks/NodeChip'
 import { DndReorder, OverlayChip, SortableRow } from './blocks/Sortable'
+import { RegexBar } from './RegexBar'
 
 export function RuleBuilder() {
   const rule = useStore((s) => s.active())
@@ -48,6 +49,7 @@ export function RuleBuilder() {
         </>
       }
     >
+      <RegexBar />
       <div className="rounded-lg border border-border bg-surface-2/40 p-4">
         {children.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
