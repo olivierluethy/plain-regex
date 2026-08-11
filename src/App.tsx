@@ -8,6 +8,7 @@ import { BuildFromExample } from '@/components/BuildFromExample'
 import { TestPanel } from '@/components/TestPanel'
 import { QuickCheck } from '@/components/QuickCheck'
 import { ExamplesPanel } from '@/components/ExamplesPanel'
+import { CodePanel } from '@/components/CodePanel'
 import { UrlMode } from '@/components/UrlMode'
 import { Timeline } from '@/components/Timeline'
 import { AiAssist } from '@/components/AiAssist'
@@ -86,6 +87,10 @@ export default function App() {
             <TestPanel />
             <QuickCheck />
           </div>
+        </div>
+
+        <div className="mt-5">
+          <CodePanel />
         </div>
 
         {historyOpen && (
