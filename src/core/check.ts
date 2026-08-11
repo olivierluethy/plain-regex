@@ -29,6 +29,56 @@ export function hasStrips(ast: RuleNode): boolean {
   return collectStripNames(ast).length > 0
 }
 
+function walkNodes(ast: RuleNode, visit: (n: RuleNode) => void): void {
+  const go = (n: RuleNode) => {
+    visit(n)
+    const rec = n as unknown as Record<string, unknown>
+    const kids = (rec.children ?? rec.options) as RuleNode[] | undefined
+    if (Array.isArray(kids)) kids.forEach(go)
+    const child = rec.child as RuleNode | undefined
+    if (child && typeof child === 'object') go(child)
+  }
+  go(ast)
+}
+
+/** True if the rule has any "not allowed / forbid" block. */
+export function hasForbid(ast: RuleNode): boolean {
+  let found = false
+  walkNodes(ast, (n) => {
+    if (n.type === 'forbid') found = true
+  })
+  return found
+}
+
+/**
+ * True if the compiled pattern uses lookaround — i.e. any `contains` or `forbid`
+ * block (both compile to lookaheads). Used to warn on engines like Go/RE2.
+ */
+export function hasLookaround(ast: RuleNode): boolean {
+  let found = false
+  walkNodes(ast, (n) => {
+    if (n.type === 'contains' || n.type === 'forbid') found = true
+  })
+  return found
+}
+
+/**
+ * A regex fragment matching just the stripped content (alternation of each strip
+ * block's child), for a replace-based "clean" usage. Empty when there are no strips.
+ */
+export function stripPattern(ast: RuleNode): string {
+  const frags: string[] = []
+  walkNodes(ast, (n) => {
+    if (n.type === 'strip') {
+      const f = compile(n.child)
+      if (f) frags.push(f)
+    }
+  })
+  if (frags.length === 0) return ''
+  if (frags.length === 1) return frags[0]
+  return `(?:${frags.join('|')})`
+}
+
 export interface CleanResult {
   matched: boolean
   cleaned: string
