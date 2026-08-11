@@ -19,6 +19,7 @@ const FRIENDLY: Record<RuleNodeType, string> = {
   capture: 'a kept part',
   strip: 'a part to remove',
   forbid: 'a “not allowed” rule',
+  raw: 'a raw pattern',
 }
 
 function collectTypes(node: RuleNode, acc: RuleNodeType[] = []): RuleNodeType[] {

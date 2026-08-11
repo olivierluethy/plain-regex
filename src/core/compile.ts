@@ -141,6 +141,10 @@ function compileNode(node: RuleNode, captureStrips: boolean): string {
       return captureStrips ? `(?<${stripGroupName(node)}>${inner})` : `(?:${inner})`
     }
 
+    case 'raw':
+      // Verbatim fragment from the importer — spliced in unchanged.
+      return node.source
+
     default:
       return ''
   }

@@ -114,6 +114,22 @@ export interface ForbidNode extends BaseNode {
   scope: 'here' | 'anywhere'
 }
 
+/**
+ * A verbatim regex fragment with no friendly-block equivalent. Produced by the
+ * regex importer when it meets a construct we can't map (lookbehind, backreference,
+ * unicode property, lazy quantifier…). It compiles to `source` unchanged, so the
+ * imported pattern keeps working and round-trips; `note` is a best-effort plain
+ * description shown in the UI. This is the only node whose meaning is *not* fully
+ * modelled by the AST — everything else is.
+ */
+export interface RawNode extends BaseNode {
+  type: 'raw'
+  /** Exact regex fragment, spliced into the compiled pattern as-is. */
+  source: string
+  /** Best-effort plain-English description of what it does. */
+  note?: string
+}
+
 export type RuleNode =
   | LiteralNode
   | CharTypeNode
@@ -128,6 +144,7 @@ export type RuleNode =
   | CaptureNode
   | StripNode
   | ForbidNode
+  | RawNode
 
 export type RuleNodeType = RuleNode['type']
 

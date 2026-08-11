@@ -9,6 +9,7 @@ import type {
   ContainsNode,
   ForbidNode,
   GroupNode,
+  RawNode,
   RepeatNode,
   RepeatPreset,
   RuleNode,
@@ -91,6 +92,7 @@ export const nodes = {
     child,
     scope,
   }),
+  raw: (source = '', note?: string): RawNode => ({ id: newId(), type: 'raw', source, note }),
 }
 
 export function emptyRuleAst(): SequenceNode {
@@ -191,6 +193,12 @@ export function normalizeNode(input: unknown): RuleNode {
       return nodes.forbid(
         normalizeNode(raw.child),
         raw.scope === 'anywhere' ? 'anywhere' : 'here',
+      )
+
+    case 'raw':
+      return nodes.raw(
+        asString(raw.source ?? '', 'source'),
+        typeof raw.note === 'string' ? raw.note : undefined,
       )
 
     default:
