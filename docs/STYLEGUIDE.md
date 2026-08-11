@@ -334,3 +334,49 @@ Empty states already invite action — keep them, add a hint only where the next
 
 **Voice:** reasons are specific and blame the rule ("No match — needs a “c” somewhere, but there is
 none"). Hints are short imperatives ("Select part of the value to turn it into a rule").
+
+---
+
+## 13. Deletion, drag confidence, traceable regex & History drawer
+
+Extends the system for control and traceability. **Reuses existing tokens.**
+
+**Clear all / Reset.** A ghost/secondary button in the BUILD header (danger-ghost: `--fail` text,
+`--fail-tint` hover) with a **lightweight inline confirm** — a small `Popover` reading "Clear all
+blocks?" with Cancel (secondary) + Clear (danger). Never a native `confirm()`. It is undoable.
+
+**Block selection (multi-delete).** A selected block shows a `2px --brand` ring (radius `md`) and a
+faint `--brand-tint` wash — the same cue whether one or several are selected. A slim selection toolbar
+appears in the BUILD header when ≥1 is selected: "N selected · Delete · Clear" (`body-sm`, Delete in
+danger-ghost). Plain click selects one (and still opens its editor); ⌘/Ctrl-click toggles; Shift-click
+ranges; Delete/Backspace removes all selected; Esc clears. Keyboard hint sits under the canvas.
+
+**Drag insertion indicator.** While dragging: the source block dims to `opacity: 0.3` in place
+(a placeholder), a `DragOverlay` ghost (existing OverlayChip, lifted `shadow-md`) follows the cursor,
+and a **`3px --brand` vertical bar** (radius `full`, `~28px` tall) marks the exact gap the block will
+drop into. The bar is the promise "it lands here". Reduced motion: no lift/scale, bar + instant reflow.
+
+**Traceable REGEX bar.** The pattern renders as **hoverable segments**, one per top-level block, in the
+same mono type. At rest they read as one continuous pattern (no chrome). On hover a segment gets
+`--brand-tint` bg + `--brand` text (radius `sm`); simultaneously the matching BUILD block rings and the
+matching IN-PLAIN-ENGLISH step tints — all driven by the shared `hoveredNodeId`, so the link fires from
+any of the three surfaces. The `/`…`/` delimiters and flags stay `--ink-faint`. A **Step-through**
+control (‹ Prev · "3 / 7" · Next ›, small secondary buttons) walks the pattern left→right; the active
+segment is emphasised everywhere and a one-line "what happens here" note (`body-sm --ink-muted`,
+`--brand` dot) sits under the bar.
+
+**IN-PLAIN-ENGLISH step highlight.** Each numbered step is hoverable and, when its block is the active/
+hovered node, its number badge fills `--brand`/white and the row tints `--brand-tint` — the reverse
+link back to the regex segment and block.
+
+**History drawer.** Opening History slides a panel in from the **right** (fixed, `--surface`, `1px
+--border` left edge, `shadow-lg`, width ~420px, full height, scrolls internally) over a `--ink/40`
+scrim — so it appears immediately, never off-screen below the fold. Header: "History" + close. Body: a
+newest-first vertical rail of snapshots (existing dot-rail styling) each with time (`mono-sm --ink-
+muted`), an auto-label, a **Restore** button, and, expanded under the selected entry, the pass↔fail
+diff vs the previous snapshot (existing green/red diff columns). The **current** entry is marked "now".
+Empty/near-empty state: "Your changes are saved here automatically as you edit — no setup needed."
+Mobile: the drawer becomes full-width.
+
+**Voice:** "Clear all", "Delete", "Restore", "Step through the pattern". History empty state reassures
+it is automatic: "Saved automatically as you edit."
