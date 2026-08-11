@@ -4,7 +4,9 @@ import { Clock, Link, Sparkles } from '@/ui/icons'
 import { Header } from '@/components/Header'
 import { RuleBuilder } from '@/components/RuleBuilder'
 import { ExplanationPanel } from '@/components/ExplanationPanel'
+import { BuildFromExample } from '@/components/BuildFromExample'
 import { TestPanel } from '@/components/TestPanel'
+import { QuickCheck } from '@/components/QuickCheck'
 import { ExamplesPanel } from '@/components/ExamplesPanel'
 import { UrlMode } from '@/components/UrlMode'
 import { Timeline } from '@/components/Timeline'
@@ -77,10 +79,12 @@ export default function App() {
             <RuleBuilder />
             {aiOpen && <AiAssist onOpenSettings={() => setSettingsOpen(true)} />}
             <ExplanationPanel />
+            <ExamplesPanel />
           </div>
           <div className="flex flex-col gap-5">
+            <BuildFromExample />
             <TestPanel />
-            <ExamplesPanel />
+            <QuickCheck />
           </div>
         </div>
 
