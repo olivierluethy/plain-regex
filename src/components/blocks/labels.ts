@@ -37,6 +37,8 @@ export function chipLabel(node: RuleNode): string {
       return node.name ? `keep: ${node.name}` : 'keep this'
     case 'strip':
       return 'remove this'
+    case 'forbid':
+      return node.scope === 'anywhere' ? 'never allow' : 'not allowed'
     case 'repeat':
       return chipLabel(node.child)
     case 'sequence':

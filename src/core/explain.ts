@@ -157,6 +157,11 @@ export function describe(node: RuleNode): string {
     case 'strip':
       return `${describe(node.child)} — marked to remove`
 
+    case 'forbid':
+      return node.scope === 'anywhere'
+        ? `${describe(node.child)} is not allowed anywhere`
+        : `${describe(node.child)} is not allowed here`
+
     default:
       return 'something'
   }
@@ -171,6 +176,10 @@ function stepSentence(node: RuleNode): string {
       return 'There must be a word boundary here.'
     case 'contains':
       return `Somewhere in the text there must be ${describe(node.child)}.`
+    case 'forbid':
+      return node.scope === 'anywhere'
+        ? `The text must never contain ${describe(node.child)}.`
+        : `${cap(describe(node.child))} is not allowed at this position.`
     case 'literal':
       return node.text.length
         ? `Match the exact text ${quote(node.text)}.`

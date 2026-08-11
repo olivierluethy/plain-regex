@@ -101,6 +101,7 @@ function sampleNode(node: RuleNode, rng: () => number): string {
 
     case 'anchor':
     case 'contains':
+    case 'forbid':
       // Zero-width; rely on siblings to satisfy lookaheads, verification filters.
       return ''
 
