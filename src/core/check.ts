@@ -310,8 +310,8 @@ export function diagnose(ast: RuleNode): string | null {
   if (requires.length) clauses.push(`requires ${requires.join(', ')}`)
   if (forbids.length) clauses.push(`forbids ${forbids.join(', ')}`)
   if (strips.length) clauses.push(`strips ${strips.join(', ')}`)
-  if (clauses.length < 1) {
-    return 'No value can satisfy every block at once — the rules contradict each other.'
-  }
-  return `This rule ${clauses.join(', but ')} — no value satisfies all of them at once.`
+  // Only claim a contradiction when a conflicting construct is actually present;
+  // otherwise the generator simply hasn't found an example for a hard-but-valid rule.
+  if (clauses.length < 1) return null
+  return `This rule ${clauses.join(', but ')} — no value seems to satisfy all of them at once.`
 }
